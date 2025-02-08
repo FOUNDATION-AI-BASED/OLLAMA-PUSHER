@@ -49,4 +49,6 @@ Then insert the copied line! Then click Add key! Look at the screenshot!:
 
 Setup is complete you can now start uploading Models!
 
+[⬅️ Back](https://github.com/dronerazzo/ollama-pusher/blob/main/README-INSTALLATION.MD) | [Next ➡️](https://github.com/dronerazzo/ollama-pusher/blob/main/README-UPLOAD.MD)
+
 </div>
