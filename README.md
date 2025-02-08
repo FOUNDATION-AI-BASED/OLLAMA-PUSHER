@@ -2,7 +2,7 @@
   <h1>Welcome To Ollama Pusher!</h1>
   <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/ollama-pusher.webp" alt="Alt text" width="800">
 </div>
-
+<div align="center">
 ******************************************************************************************************************
 
 What is this tool?
