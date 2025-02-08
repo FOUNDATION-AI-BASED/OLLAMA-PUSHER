@@ -4,9 +4,13 @@
 </div>
 
 *******************************************************************************************************************
+<div align="center">
+
 What is this tool?
 
 This tool lets you easily push a model to the ollama publi libary!
+
+</div>
 *******************************************************************************************************************
 <div align="center">
 
@@ -43,6 +47,7 @@ If you choose 0 earlier: ipadress:port
 
 if you choose 1 earlier: localhost:port or 127.0.0.1:port
 *******************************************************************************************************************
+<div align="center">
 
 Setup process:
 
@@ -83,4 +88,6 @@ Then insert the copied line! Then click Add key! Look at the screenshot!:
 </div>
 
 Setup is complete you can now start uploading Models!
+
+</div>
 *******************************************************************************************************************
