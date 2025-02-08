@@ -4,10 +4,15 @@
 </div>
 *******************************************************************************************************************
 What needs to be installed already?:
+
 python flask
+
 python psutil
+
 python requests
+
 python werkzeug
+
 Ollama (Not Required will be installed automatically if not already installed!)
 *******************************************************************************************************************
 
