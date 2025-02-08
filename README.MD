@@ -8,6 +8,8 @@ What is this tool?
 
 This tool lets you easily push a model to the ollama publi libary!
 *******************************************************************************************************************
+<div align="center">
+
 What needs to be installed already?:
 
 python flask
@@ -19,6 +21,8 @@ python requests
 python werkzeug
 
 Ollama (Not Required will be installed automatically if not already installed!)
+
+</div>
 *******************************************************************************************************************
 
 Installation Process:
