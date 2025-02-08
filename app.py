@@ -221,25 +221,25 @@ if __name__ == '__main__':
     
     print("\nOllama Pusher Web Interface")
     print("---------------------------")
+    print("0. All interfaces (0.0.0.0)")
     print("1. localhost (127.0.0.1)")
-    print("2. All interfaces (0.0.0.0)")
     
     while True:
         try:
-            choice = input("\nSelect host option (1 or 2): ").strip()
-            if choice in ['1', '2']:
-                host = 'localhost' if choice == '1' else '0.0.0.0'
+            choice = input("\nSelect host option (0 or 1): ").strip()
+            if choice in ['0', '1']:
+                host = '0.0.0.0' if choice == '0' else 'localhost'
                 break
-            print("Please enter 1 or 2")
+            print("Please enter 0 or 1")
         except ValueError:
-            print("Please enter 1 or 2")
+            print("Please enter 0 or 1")
     
     while True:
         try:
-            port = int(input("\nEnter port number (1024-65535): "))
-            if 1024 <= port <= 65535:
+            port = int(input("\nEnter port number (1-65535): "))
+            if 1 <= port <= 65535:
                 break
-            print("Please enter a valid port number between 1024 and 65535")
+            print("Please enter a valid port number between 1 and 65535")
         except ValueError:
             print("Please enter a valid port number")
     
