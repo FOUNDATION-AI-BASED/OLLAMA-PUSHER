@@ -58,6 +58,8 @@
         <div class="flex justify-center mb-8">
             <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/ollama-pusher.webp" alt="Header Image" class="w-196"> <!-- Adjust width here -->
         </div>
+    </div>
+    
         
         <!-- Model Upload Form -->
         <div class="bg-white p-4 rounded-lg shadow mb-8">
@@ -307,7 +309,15 @@
                                 if (event.progress) {
                                     progressText.textContent = event.progress;
                                     // Update progress bar width based on progress
-                                    progressBar.style.width = '50%';
+                                    if (event.progress.includes('100%')) {
+                                        progressBar.style.width = '100%';
+                                    } else if (event.progress.includes('50%')) {
+                                        progressBar.style.width = '50%';
+                                    } else if (event.progress.includes('25%')) {
+                                        progressBar.style.width = '25%';
+                                    } else if (event.progress.includes('75%')) {
+                                        progressBar.style.width = '75%';
+                                    }
                                 } else if (event.status === 'success') {
                                     progressBar.style.width = '100%';
                                     progressText.textContent = 'Push complete!';
