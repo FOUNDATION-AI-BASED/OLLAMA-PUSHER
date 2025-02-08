@@ -16,13 +16,17 @@ This tool lets you easily push a model to the ollama publi libary!
 
 What needs to be installed already?:
 
-python flask
+python3
 
-python psutil
+python3 flask
 
-python requests
+python3 psutil
 
-python werkzeug
+python3 requests
+
+python3 werkzeug
+
+python3 pip
 
 If not already installed run this:
 
@@ -31,6 +35,52 @@ sudo pip install flask psutil requests werkzeug
 Ollama (Not Required will be installed automatically if not already installed!)
 
 ! It is important to run it as ROOT SUDO!!!!
+
+To install python3:
+
+MacOS:
+
+brew install python
+
+Ubuntu:
+
+sudo apt install python3
+
+Fedora/RHEL/CentOS-based distributions:
+
+sudo dnf install python3
+
+Arch Linux:
+
+sudo pacman -S python
+
+
+Windows:
+
+Method 1: Using the official installer
+
+Go to the official Python website:
+
+https://www.python.org/downloads/
+
+Download the installer:
+
+Click on the "Download Python" button for the latest stable version (e.g., Python 3.x).
+
+Run the installer:
+
+Check the box that says "Add Python to PATH" (this is important).
+
+Click on "Install Now" and follow the installation prompts.
+
+Method 2: Using Windows Package Manager (Winget)
+
+If you have Windows 10 or Windows 11 with Winget:
+
+winget install Python.Python.3
+
+
+Check if python3 is installd: python3 --version
 
 </div>
 *******************************************************************************************************************
