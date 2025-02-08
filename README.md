@@ -24,7 +24,13 @@ python requests
 
 python werkzeug
 
+If not already installed run this:
+
+sudo pip install flask psutil requests werkzeug
+
 Ollama (Not Required will be installed automatically if not already installed!)
+
+! It is important to run it as ROOT SUDO!!!!
 
 </div>
 *******************************************************************************************************************
