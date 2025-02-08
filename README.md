@@ -29,32 +29,32 @@ Ollama (Not Required will be installed automatically if not already installed!)
 </div>
 *******************************************************************************************************************
 
-<div align="center" style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 20px; padding: 20px;">
-  <div style="text-align: center; width: 200px;">
+<div align="center" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; padding: 20px;">
+  <div style="text-align: center; max-width: 200px;">
     <p><strong>1. Start with Installation and Setup</strong></p>
     <a href="https://github.com/dronerazzo/ollama-pusher/blob/main/README-INSTALLATION.MD">
-      <button style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">Start</button>
+      <img src="https://img.shields.io/badge/Start-green?style=for-the-badge&logo=github" alt="Start Button">
     </a>
   </div>
   
-  <div style="text-align: center; width: 200px;">
+  <div style="text-align: center; max-width: 200px;">
     <p><strong>2. Begin Installation</strong></p>
     <a href="https://github.com/dronerazzo/ollama-pusher/blob/main/README-INSTALLATION.MD">
-      <button style="padding: 10px 20px; background-color: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer;">Installation</button>
+      <img src="https://img.shields.io/badge/Installation-blue?style=for-the-badge&logo=github" alt="Installation Button">
     </a>
   </div>
   
-  <div style="text-align: center; width: 200px;">
+  <div style="text-align: center; max-width: 200px;">
     <p><strong>3. Complete Setup</strong></p>
     <a href="https://github.com/dronerazzo/ollama-pusher/blob/main/README-SETUP.MD">
-      <button style="padding: 10px 20px; background-color: #FF9800; color: white; border: none; border-radius: 5px; cursor: pointer;">Setup</button>
+      <img src="https://img.shields.io/badge/Setup-orange?style=for-the-badge&logo=github" alt="Setup Button">
     </a>
   </div>
   
-  <div style="text-align: center; width: 200px;">
+  <div style="text-align: center; max-width: 200px;">
     <p><strong>4. Upload Files</strong></p>
     <a href="https://github.com/dronerazzo/ollama-pusher/blob/main/README-UPLOAD.MD">
-      <button style="padding: 10px 20px; background-color: #FF5722; color: white; border: none; border-radius: 5px; cursor: pointer;">Upload</button>
+      <img src="https://img.shields.io/badge/Upload-red?style=for-the-badge&logo=github" alt="Upload Button">
     </a>
   </div>
 </div>
