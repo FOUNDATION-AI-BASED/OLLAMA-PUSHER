@@ -1,1 +1,413 @@
-silence is gold!
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollama Pusher</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .modern-header {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(90deg, #4f46e5, #9333ea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        .credits {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+            animation: slideIn 2s ease-in-out;
+        }
+        @keyframes slideIn {
+            0% { transform: translateY(100%); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto border border-gray-300 p-4 rounded-lg">
+        <!-- Modern Header -->
+        <div class="flex justify-center mb-8">
+            <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/ollama-pusher.webp" alt="Header Image" class="w-196"> <!-- Adjust width here -->
+        </div>
+        
+        <!-- Model Upload Form -->
+        <div class="bg-white p-4 rounded-lg shadow mb-8">
+            <h2 class="text-xl font-semibold mb-4">Upload Model File</h2>
+            <form id="uploadForm" class="space-y-4">
+                <div>
+                    <label class="block mb-2">Select Model File:</label>
+                    <input type="file" name="file" accept=".gguf" class="w-full p-2 border rounded" required>
+                </div>
+
+                <div id="uploadProgressContainer" class="hidden">
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                        <div id="uploadProgressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="uploadProgressText" class="text-sm text-gray-600"></p>
+                </div>
+
+                <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    Upload Model
+                </button>
+            </form>
+        </div>
+
+        <!-- Push Model Form -->
+        <div class="bg-white p-4 rounded-lg shadow mb-8">
+            <h2 class="text-xl font-semibold mb-4">Push Model to Ollama</h2>
+            <form id="pushForm" class="space-y-4">
+                <div>
+                    <label class="block mb-2">Repository Name:</label>
+                    <input type="text" name="repository" class="w-full p-2 border rounded" placeholder="username/model-name" required>
+                </div>
+
+                <div>
+                    <label class="block mb-2">Version:</label>
+                    <input type="text" name="version" class="w-full p-2 border rounded" placeholder="latest" value="latest">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block mb-2">Model Source:</label>
+                    <select id="modelSource" class="w-full p-2 border rounded">
+                        <option value="existing">Use Existing Model</option>
+                        <option value="uploaded">Use Uploaded Model</option>
+                    </select>
+                </div>
+
+                <div id="existingModelInputs">
+                    <div>
+                        <label class="block mb-2">Base Model:</label>
+                        <input type="text" name="base_model" class="w-full p-2 border rounded" placeholder="e.g., llama2">
+                    </div>
+                </div>
+
+                <div id="uploadedModelInputs" class="hidden">
+                    <div>
+                        <label class="block mb-2">Select Uploaded Model:</label>
+                        <select name="uploaded_model" class="w-full p-2 border rounded">
+                            {% for model in uploaded_models %}
+                                <option value="{{ model }}">{{ model }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block mb-2">License:</label>
+                    <textarea name="license" class="w-full p-2 border rounded" rows="3" placeholder="Enter license information"></textarea>
+                </div>
+
+                <div>
+                    <label class="block mb-2">System Prompt:</label>
+                    <textarea name="system_prompt" class="w-full p-2 border rounded" rows="3"></textarea>
+                </div>
+
+                <div id="pushProgressContainer" class="hidden">
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                        <div id="pushProgressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="pushProgressText" class="text-sm text-gray-600"></p>
+                </div>
+
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    Push Model
+                </button>
+            </form>
+        </div>
+
+        <!-- Models List -->
+        <div class="bg-white p-4 rounded-lg shadow mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Models</h2>
+                <button onclick="refreshModels()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                    Refresh
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <h3 class="font-semibold mb-2">Uploaded Models</h3>
+                    <ul id="uploadedModelsList" class="space-y-2">
+                        {% for model in uploaded_models %}
+                            <li class="p-2 bg-gray-100 rounded flex justify-between items-center">
+                                <span>{{ model }}</span>
+                                <button onclick="deleteModel('{{ model }}')" class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">Delete</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold mb-2">Installed Models</h3>
+                    <ul id="installedModelsList" class="space-y-2">
+                        {% for model in installed_models %}
+                            <li class="p-2 bg-gray-100 rounded">{{ model }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Public Key -->
+        <div class="bg-white p-4 rounded-lg shadow mb-8">
+            <h2 class="text-xl font-semibold mb-4">Ollama Public Key</h2>
+            {% if public_key %}
+            <div class="bg-gray-100 p-4 rounded-lg">
+                <pre class="whitespace-pre-wrap break-all font-mono text-sm">{{ public_key }}</pre>
+            </div>
+            {% else %}
+            <p class="text-gray-600">No public key found.</p>
+            {% endif %}
+        </div>
+
+        <!-- Info Box -->
+        <div class="bg-white p-4 rounded-lg shadow mb-8">
+            <h2 class="text-xl font-semibold mb-4">How to Use</h2>
+            <p class="text-gray-600">
+                - The <strong>Version</strong> field is used to specify the version of the model you are pushing. If left blank, it defaults to "latest".<br>
+                - Use the <strong>Model Source</strong> dropdown to select whether you want to use an existing model or an uploaded model.<br>
+                - The <strong>License</strong> field is optional but recommended for specifying the license of the model.<br>
+                - The <strong>System Prompt</strong> field is used to define the system prompt for the model.
+            </p>
+        </div>
+
+        <!-- Footer with Credits -->
+        <div class="credits">
+            <p>Ollama Pusher v1.0.1 | Credits: Your Name Here</p>
+        </div>
+
+        <!-- Shutdown Button -->
+        <div class="text-center mt-8">
+            <button onclick="shutdownServer()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                Shutdown Server
+            </button>
+        </div>
+    </div>
+
+    <!-- Popup for successful upload -->
+    <div id="uploadSuccessPopup" class="popup hidden">
+        <p>Model uploaded successfully! Please refresh the page to use the uploaded model.</p>
+        <button onclick="closePopup()" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Close</button>
+    </div>
+    <div id="overlay" class="overlay hidden"></div>
+
+    <script>
+        // Handle model source selection
+        document.getElementById('modelSource').addEventListener('change', function() {
+            const useUploaded = this.value === 'uploaded';
+            document.getElementById('existingModelInputs').style.display = useUploaded ? 'none' : 'block';
+            document.getElementById('uploadedModelInputs').style.display = useUploaded ? 'block' : 'none';
+        });
+    
+        // Handle model upload
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const progressContainer = document.getElementById('uploadProgressContainer');
+            const progressBar = document.getElementById('uploadProgressBar');
+            const progressText = document.getElementById('uploadProgressText');
+    
+            progressContainer.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            progressText.textContent = 'Starting upload...';
+    
+            try {
+                const response = await fetch('/upload_model', {
+                    method: 'POST',
+                    body: formData
+                });
+    
+                const result = await response.json();
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+    
+                progressBar.style.width = '100%';
+                progressText.textContent = 'Upload complete!';
+                showUploadSuccessPopup();
+            } catch (error) {
+                progressText.textContent = `Error: ${error.message}`;
+                progressBar.style.backgroundColor = 'red';
+            }
+        });
+    
+        // Handle model push
+        document.getElementById('pushForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = {
+                repository: formData.get('repository'),
+                base_model: formData.get('base_model'),
+                system_prompt: formData.get('system_prompt'),
+                use_uploaded: document.getElementById('modelSource').value === 'uploaded',
+                uploaded_model: formData.get('uploaded_model'),
+                version: formData.get('version') || 'latest',
+                license: formData.get('license') || ''
+            };
+    
+            const progressContainer = document.getElementById('pushProgressContainer');
+            const progressBar = document.getElementById('pushProgressBar');
+            const progressText = document.getElementById('pushProgressText');
+    
+            progressContainer.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            progressText.textContent = 'Starting push...';
+    
+            try {
+                const response = await fetch('/push_model', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+    
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+    
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+    
+                    const text = decoder.decode(value);
+                    const messages = text.split('\n\n');
+                    
+                    for (const message of messages) {
+                        if (message.startsWith('data: ')) {
+                            try {
+                                const event = JSON.parse(message.substring(6));
+                                
+                                if (event.progress) {
+                                    progressText.textContent = event.progress;
+                                    // Update progress bar width based on progress
+                                    progressBar.style.width = '50%';
+                                } else if (event.status === 'success') {
+                                    progressBar.style.width = '100%';
+                                    progressText.textContent = 'Push complete!';
+                                    await refreshModels();
+                                } else if (event.status === 'error') {
+                                    throw new Error(event.message);
+                                }
+                            } catch (parseError) {
+                                console.error('Parse error:', parseError);
+                                continue;
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                progressText.textContent = `Error: ${error.message}`;
+                progressBar.style.backgroundColor = 'red';
+            }
+        });
+    
+        // Refresh models list
+        async function refreshModels() {
+            try {
+                const response = await fetch('/refresh_models');
+                const data = await response.json();
+    
+                const uploadedModelsList = document.getElementById('uploadedModelsList');
+                const installedModelsList = document.getElementById('installedModelsList');
+    
+                uploadedModelsList.innerHTML = data.uploaded_models.map(model => `
+                    <li class="p-2 bg-gray-100 rounded flex justify-between items-center">
+                        <span>${model}</span>
+                        <button onclick="deleteModel('${model}')" class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">Delete</button>
+                    </li>
+                `).join('');
+                installedModelsList.innerHTML = data.installed_models.map(model => `<li class="p-2 bg-gray-100 rounded">${model}</li>`).join('');
+            } catch (error) {
+                console.error('Error refreshing models:', error);
+            }
+        }
+    
+        // Delete model
+        async function deleteModel(modelName) {
+            try {
+                const response = await fetch('/delete_model', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model_name: modelName })
+                });
+    
+                const result = await response.json();
+                if (result.status === 'success') {
+                    await refreshModels();
+                } else {
+                    alert(result.message || 'Error deleting model');
+                }
+            } catch (error) {
+                alert('Error deleting model');
+                console.error('Error:', error);
+            }
+        }
+    
+        // Shutdown server
+        async function shutdownServer() {
+            if (!confirm('Are you sure you want to shut down the server?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/shutdown', {
+                    method: 'POST'
+                });
+    
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert('Server is shutting down...');
+                    // Wait a moment before closing the window
+                    setTimeout(() => {
+                        window.close();
+                    }, 1000);
+                } else {
+                    alert('Error shutting down server');
+                }
+            } catch (error) {
+                alert('Error shutting down server');
+                console.error('Error:', error);
+            }
+        }
+    
+        // Show upload success popup
+        function showUploadSuccessPopup() {
+            document.getElementById('uploadSuccessPopup').classList.remove('hidden');
+            document.getElementById('overlay').classList.remove('hidden');
+        }
+    
+        // Close popup
+        function closePopup() {
+            document.getElementById('uploadSuccessPopup').classList.add('hidden');
+            document.getElementById('overlay').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
