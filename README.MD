@@ -1,6 +1,6 @@
 <div align="center">
   <h1>Welcome To Ollama Pusher!</h1>
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/ollama-pusher.webp" alt="Alt text" width="600">
+  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/ollama-pusher.webp" alt="Alt text" width="800">
 </div>
 
 *******************************************************************************************************************
@@ -42,4 +42,8 @@ if you choose 1 earlier: localhost:port or 127.0.0.1:port
 
 Setup process:
 
+Go to the Webui and copy the code! Look at the screenshot!:
 
+<div align="center">
+  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.49.20.webp" alt="Alt text" width="600">
+</div>
