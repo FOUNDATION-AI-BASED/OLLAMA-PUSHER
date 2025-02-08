@@ -32,18 +32,18 @@ Ollama (Not Required will be installed automatically if not already installed!)
 <div align="center" style="display: flex; justify-content: space-between;">
   <div style="text-align: center;">
     <p><strong>1. Start</strong></p>
-    <a href="[https://github.com/dronerazzo/ollama-pusher/blob/main/README-INSTALLATION.MD]"><button>⬅️ Start INSTALLATION AND SETUP</button></a>
+    <a href="https://github.com/dronerazzo/ollama-pusher/blob/main/README-INSTALLATION.MD"><button>⬅️ Start INSTALLATION AND SETUP</button></a>
   </div>
   <div style="text-align: center;">
     <p><strong>2. Installation</strong></p>
-    <a href="https://example.com/install"><button>Installieren</button></a>
+    <a href="https://github.com/dronerazzo/ollama-pusher/blob/main/README-INSTALLATION.MD"><button>Installation</button></a>
   </div>
   <div style="text-align: center;">
     <p><strong>3. Setup</strong></p>
-    <a href="https://example.com/setup"><button>Einrichten</button></a>
+    <a href="https://github.com/dronerazzo/ollama-pusher/blob/main/README-SETUP.MD"><button>Setup</button></a>
   </div>
   <div style="text-align: center;">
     <p><strong>4. Upload</strong></p>
-    <a href="https://example.com/upload"><button>Hochladen</button></a>
+    <a href="https://github.com/dronerazzo/ollama-pusher/blob/main/README-UPLOAD.MD"><button>Hochladen</button></a>
   </div>
 </div>
