@@ -75,11 +75,15 @@ After you are logged into your ollama account go to settings! Look at the screen
   <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2006.43.07.webp" alt="Alt text" width="600">
 </div>
 
+https://ollama.com/settings
+
 Then go to Ollama Keys! Look at the screenshot!:
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.55.52.webp" alt="Alt text" width="600">
 </div>
+
+https://ollama.com/settings/keys
 
 Then insert the copied line! Then click Add key! Look at the screenshot!:
 
