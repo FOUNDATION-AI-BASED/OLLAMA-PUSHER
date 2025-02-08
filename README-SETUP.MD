@@ -1,7 +1,6 @@
 <div align="center">
-  <h1>Welcome To Ollama Pusher!</h1>
+  <h1>Welcome to the Ollama Pusher Setup</h1>
   <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/ollama-pusher.webp" alt="Alt text" width="800">
-<Welcome to the Ollama Pusher Setup>
 </div>
 
 *******************************************************************************************************************<div align="center">
