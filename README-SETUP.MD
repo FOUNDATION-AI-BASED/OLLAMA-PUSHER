@@ -3,7 +3,11 @@
   <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/ollama-pusher.webp" alt="Alt text" width="800">
 </div>
 
+<div align="center">
+
 *******************************************************************************************************************<div align="center">
+
+</div>
 
 Setup process:
 
