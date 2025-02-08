@@ -4,15 +4,14 @@
 </div>
 
 ******************************************************************************************************************
-<div align="center">
 
 What is this tool?
 
 This tool lets you easily push a model to the ollama publi libary!
 
-</div>
+
 ******************************************************************************************************************
-<div align="center">
+
 
 What needs to be installed already?:
 
@@ -82,8 +81,9 @@ winget install Python.Python.3
 
 Check if python3 is installd: python3 --version
 
-</div>
+
 ******************************************************************************************************************
+</div>
 
 <div align="center" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; padding: 20px;">
   <div style="text-align: center; max-width: 200px;">
