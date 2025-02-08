@@ -3,6 +3,9 @@
   <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/ollama-pusher.webp" alt="Alt text" width="600">
 </div>
 *******************************************************************************************************************
+What is this tool?
+This tool lets you easily push a model to the ollama publi libary!
+*******************************************************************************************************************
 What needs to be installed already?:
 
 python flask
@@ -33,4 +36,8 @@ Now Access the Webui!
 If you choose 0 earlier: ipadress:port 
 
 if you choose 1 earlier: localhost:port or 127.0.0.1:port
+*******************************************************************************************************************
+
+Setup process:
+
 
