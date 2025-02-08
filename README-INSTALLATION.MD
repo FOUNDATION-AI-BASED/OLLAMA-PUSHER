@@ -25,3 +25,5 @@ If you choose 0 earlier: ipadress:port
 if you choose 1 earlier: localhost:port or 127.0.0.1:port
 
 </div>
+
+[⬅️ Back](https://github.com/dronerazzo/ollama-pusher/tree/main) | [Next ➡️](https://github.com/dronerazzo/ollama-pusher/blob/main/README-SETUP.MD)
