@@ -3,7 +3,12 @@
   <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/ollama-pusher.webp" alt="Alt text" width="800">
 </div>
 
+<div align="center">
+
 *******************************************************************************************************************
+
+</div>
+
 <div align="center">
 
 Upload Your first Model:
