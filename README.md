@@ -29,10 +29,10 @@ Ollama (Not Required will be installed automatically if not already installed!)
 </div>
 *******************************************************************************************************************
 
-<div style="display: flex; justify-content: space-between;">
+<div align="center" style="display: flex; justify-content: space-between;">
   <div style="text-align: center;">
     <p><strong>1. Start</strong></p>
-    <a href="https://example.com/start"><button>⬅️ Erster Knopf</button></a>
+    <a href="[https://github.com/dronerazzo/ollama-pusher/blob/main/README-INSTALLATION.MD]"><button>⬅️ Start INSTALLATION AND SETUP</button></a>
   </div>
   <div style="text-align: center;">
     <p><strong>2. Installation</strong></p>
