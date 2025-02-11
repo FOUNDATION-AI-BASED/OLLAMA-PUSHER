@@ -7,6 +7,32 @@
   
 ******************************************************************************************************************
 
+<h1 align="center">Ollama Pusher Webui</h1>
+<p align="center">A modern web interface for pushing gguf llms to ollama public libary!</p>
+
+<p align="center">
+  <a href="https://ollama.ai">
+    <img src="https://img.shields.io/badge/Powered%20by-Ollama-blue?style=flat-square" alt="Powered by Ollama">
+  </a>
+</p>
+
+## ✨ Features
+
+- 🖥️ Clean, modern interface for interacting with Ollama libary
+- 💾 Local model storage
+- 🚀 Fast and responsive
+- 🔒 Privacy-focused: All proccess are being exectued locally
+- ⏰ Ready to go in under 10 minutes
+- ⚖️ Low resource consuming
+
+## 🛣️ Roadmap
+
+- [ ] ADDING SUPPORT FOR SAFETENSOR MODELS
+- [ ] FIXING QUALITY BUGS
+
+
+******************************************************************************************************************
+
 What is this tool?
 
 This tool lets you easily push a model to the ollama publi libary!
