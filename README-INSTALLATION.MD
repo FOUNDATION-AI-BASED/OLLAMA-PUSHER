@@ -13,8 +13,6 @@ git clone https://github.com/dronerazzo/ollama-pusher.git
 
 cd ollama-pusher
 
-sudo pip install flask psutil requests werkzeug
-
 sudo python3 app.py
 
 Choose 0 for running on your ip adress or if you want to only access it from the same device choose 1!
