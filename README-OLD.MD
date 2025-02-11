@@ -1,6 +1,6 @@
 <div align="center">
   <h1>Welcome To Ollama Pusher!</h1>
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/ollama-pusher.webp" alt="Alt text" width="800">
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/ollama-pusher/refs/heads/main/templates/ollama-pusher.webp" alt="Alt text" width="800">
 </div>
 
 *******************************************************************************************************************
@@ -54,7 +54,7 @@ Setup process:
 Go to the Webui and copy the code! Look at the screenshot!:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.49.20.webp" alt="Alt text" width="600">
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.49.20.webp" alt="Alt text" width="600">
 </div>
 
 Go to Ollama and login in to your account! Look at the screenshot!:
@@ -62,17 +62,17 @@ Go to Ollama and login in to your account! Look at the screenshot!:
 https://ollama.com/signin
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.54.45.webp" alt="Alt text" width="600">
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.54.45.webp" alt="Alt text" width="600">
 </div>
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.54.51.webp" alt="Alt text" width="600">
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.54.51.webp" alt="Alt text" width="600">
 </div>
 
 After you are logged into your ollama account go to settings! Look at the screenshot!:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2006.43.07.webp" alt="Alt text" width="600">
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2006.43.07.webp" alt="Alt text" width="600">
 </div>
 
 https://ollama.com/settings
@@ -80,7 +80,7 @@ https://ollama.com/settings
 Then go to Ollama Keys! Look at the screenshot!:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.55.52.webp" alt="Alt text" width="600">
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.55.52.webp" alt="Alt text" width="600">
 </div>
 
 https://ollama.com/settings/keys
@@ -88,7 +88,7 @@ https://ollama.com/settings/keys
 Then insert the copied line! Then click Add key! Look at the screenshot!:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.56.53.webp" alt="Alt text" width="600">
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.56.53.webp" alt="Alt text" width="600">
 </div>
 
 Setup is complete you can now start uploading Models!
@@ -103,53 +103,53 @@ Go to Ollama My Models:
 Then click New to create a new model repo! Look at the screenshot!:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.55.00.webp" alt="Alt text" width="600">
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.55.00.webp" alt="Alt text" width="600">
 </div>
 
 Then give your model a name choose if it should be public avaiable or only private and click create model! Look at the screenshot!:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.55.18.webp" alt="Alt text" width="600">
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.55.18.webp" alt="Alt text" width="600">
 </div>
 
 Copy the Repo directory! Look at the screenshot!:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.55.31.webp" alt="Alt text" width="600">
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2005.55.31.webp" alt="Alt text" width="600">
 </div>
 
 Now paste the repo directory in step 1. and choose model size or how you would like to name your version you are uploading! Look at the screenshot!:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2006.09.21.webp" alt="Alt text" width="600">
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2006.09.21.webp" alt="Alt text" width="600">
 </div>
 
 Now choose how you would like to upload the model! Look at the screenshot!:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2006.13.12.webp" alt="Alt text" width="600">
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2006.13.12.webp" alt="Alt text" width="600">
 </div>
 
 Now enter your models system prompt! Look at the screenshot!:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2006.16.03.webp" alt="Alt text" width="600">
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2006.16.03.webp" alt="Alt text" width="600">
 </div>
 
 Click Push Model if you have entered everything you wanted!! Look at the screenshot!:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2006.17.34.webp" alt="Alt text" width="600">
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2006.17.34.webp" alt="Alt text" width="600">
 </div>
 
 Here you can upload your model and choose it like previosly shown to push it to ollama! Look at the screenshot!:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2007.10.30.webp" alt="Alt text" width="600">
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2007.10.30.webp" alt="Alt text" width="600">
 </div>
 
 Now you can refresh the model page on the ollama site and see the uploaded llm! Look at the screenshot!:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2006.31.54.webp" alt="Alt text" width="600">
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/ollama-pusher/refs/heads/main/templates/docs/Screenshot%202025-02-08%20at%2006.31.54.webp" alt="Alt text" width="600">
 </div>
