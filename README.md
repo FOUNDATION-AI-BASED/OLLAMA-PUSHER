@@ -31,6 +31,7 @@
 
 - [ ] ADDING SUPPORT FOR SAFETENSOR MODELS
 - [ ] FIXING QUALITY BUGS
+- [ ] Ability to delete ollama models
 
 
 ******************************************************************************************************************
