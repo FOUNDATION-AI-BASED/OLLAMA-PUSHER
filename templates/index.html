@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ollama Pusher</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         .modern-header {
             font-size: 2.5rem;
@@ -12,23 +13,6 @@
             background: linear-gradient(90deg, #4f46e5, #9333ea);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 2rem;
-            font-size: 0.875rem;
-            color: #6b7280;
-        }
-        .credits {
-            text-align: center;
-            margin-top: 2rem;
-            font-size: 0.875rem;
-            color: #6b7280;
-            animation: slideIn 2s ease-in-out;
-        }
-        @keyframes slideIn {
-            0% { transform: translateY(100%); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
         }
         .popup {
             position: fixed;
@@ -40,6 +24,11 @@
             border-radius: 0.5rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             z-index: 1000;
+            width: 400px;
+            text-align: center;
+        }
+        .space-x-4 > * + * {
+            margin-left: 1rem;
         }
         .overlay {
             position: fixed;
@@ -77,6 +66,25 @@
         }
         .error-state {
             background-color: #ef4444 !important;
+        }
+        .popup-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .popup-buttons button {
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+        }
+        .popup-buttons .open-link {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .popup-buttons .close-popup {
+            background-color: #ef4444;
+            color: white;
         }
     </style>
 </head>
@@ -234,7 +242,7 @@
 
         <!-- Footer with Credits -->
         <div class="credits" align="center">
-            <p>Ollama Pusher v1.1 | Credits: FOUNDATION AI BASED, dronerazzo</p>
+            <p>Ollama Pusher v1.2 | Credits: dronerazzo, FOUNDATION AI BASED</p>
         </div>
 
         <!-- Shutdown Button -->
@@ -247,12 +255,38 @@
 
     <!-- Popup for successful upload -->
     <div id="uploadSuccessPopup" class="popup hidden">
-        <p>Model uploaded successfully! Please refresh the page to use the uploaded model.</p>
-        <button onclick="closePopup()" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Close</button>
+        <div class="text-center">
+            <h3 class="text-xl font-semibold mb-4">Success!</h3>
+            <p class="mb-6">Model uploaded successfully! Please refresh the page to use the uploaded model.</p>
+            <div class="flex space-x-4 justify-center">
+                <button onclick="reloadPage()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    Reload Page
+                </button>
+                <button onclick="closePopup()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    Close
+                </button>
+            </div>
+        </div>
     </div>
+
+    <!-- Popup for successful push -->
+    <div id="pushSuccessPopup" class="popup hidden">
+        <p>Model pushed successfully!</p>
+        <div class="mt-4">
+            <input type="text" id="modelUrl" class="w-full p-2 border rounded" readonly>
+        </div>
+        <div class="popup-buttons">
+            <button class="open-link" onclick="openModelLink()">Open in Ollama</button>
+            <button class="close-popup" onclick="closePushPopup()">Close</button>
+        </div>
+    </div>
+
     <div id="overlay" class="overlay hidden"></div>
 
     <script>
+        let currentRepository = '';
+        let currentVersion = '';
+
         // Handle model source selection
         document.getElementById('modelSource').addEventListener('change', function() {
             const useUploaded = this.value === 'uploaded';
@@ -288,8 +322,11 @@
                     if (xhr.status === 200) {
                         progressBar.style.width = '100%';
                         progressText.textContent = 'Upload complete!';
-                        showUploadSuccessPopup();
-                        refreshModels();
+                        triggerConfetti();
+                        setTimeout(() => {
+                            showUploadSuccessPopup();
+                            refreshModels();
+                        }, 1000);
                     } else {
                         const error = JSON.parse(xhr.responseText).error;
                         progressText.textContent = `Error: ${error}`;
@@ -306,64 +343,103 @@
             xhr.send(formData);
         });
 
-        // Handle model push
-        document.getElementById('pushForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const data = {
-                repository: formData.get('repository'),
-                base_model: formData.get('base_model'),
-                system_prompt: formData.get('system_prompt'),
-                use_uploaded: document.getElementById('modelSource').value === 'uploaded',
-                uploaded_model: formData.get('uploaded_model'),
-                version: formData.get('version') || 'latest',
-                license: formData.get('license') || ''
-            };
+// Handle model push
+document.getElementById('pushForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const data = {
+        repository: formData.get('repository'),
+        base_model: formData.get('base_model'),
+        system_prompt: formData.get('system_prompt'),
+        use_uploaded: document.getElementById('modelSource').value === 'uploaded',
+        uploaded_model: formData.get('uploaded_model'),
+        version: formData.get('version') || 'latest',
+        license: formData.get('license') || ''
+    };
 
-            const progressBar = document.getElementById('pushProgressBar');
-            const progressText = document.getElementById('pushProgressText');
-            const progressContainer = document.getElementById('pushProgressContainer');
-            
-            progressContainer.classList.remove('hidden');
-            progressBar.style.width = '0%';
-            progressText.textContent = 'Initializing...';
+    currentRepository = data.repository;
+    currentVersion = data.version;
 
-            const eventSource = new EventSource(`/push_model?data=${encodeURIComponent(JSON.stringify(data))}`);
-            
-            eventSource.onmessage = function(e) {
-                try {
-                    const event = JSON.parse(e.data);
-                    
-                    switch(event.type) {
-                        case 'progress':
-                            progressBar.style.width = `${event.progress}%`;
-                            progressText.textContent = event.message;
-                            break;
-                            
-                        case 'success':
-                            progressBar.style.width = '100%';
-                            progressText.textContent = event.message;
-                            eventSource.close();
-                            refreshModels();
-                            break;
-                            
-                        case 'error':
-                            progressText.textContent = `Error: ${event.message}`;
-                            progressBar.classList.add('error-state');
-                            eventSource.close();
-                            break;
-                    }
-                } catch (parseError) {
-                    console.error('Parse error:', parseError);
+    const progressBar = document.getElementById('pushProgressBar');
+    const progressText = document.getElementById('pushProgressText');
+    const progressContainer = document.getElementById('pushProgressContainer');
+    
+    progressContainer.classList.remove('hidden');
+    progressBar.style.width = '0%';
+    progressText.textContent = 'Initializing...';
+
+    // Use POST instead of GET
+    fetch('/push_model', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.body.getReader();
+    })
+    .then(reader => {
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        function readStream() {
+            return reader.read().then(({ done, value }) => {
+                if (done) {
+                    return;
                 }
-            };
 
-            eventSource.onerror = function() {
-                progressText.textContent = 'Connection error';
-                progressBar.classList.add('error-state');
-                eventSource.close();
-            };
-        });
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const event = JSON.parse(line.substring(6));
+                            
+                            switch(event.type) {
+                                case 'progress':
+                                    progressBar.style.width = `${event.progress}%`;
+                                    progressText.textContent = event.message;
+                                    break;
+                                    
+                                case 'success':
+                                    progressBar.style.width = '100%';
+                                    progressText.textContent = event.message;
+                                    triggerConfetti();
+                                    setTimeout(() => {
+                                        showPushSuccessPopup();
+                                        refreshModels();
+                                    }, 1000);
+                                    break;
+                                    
+                                case 'error':
+                                    progressText.textContent = `Error: ${event.message}`;
+                                    progressBar.classList.add('error-state');
+                                    break;
+                            }
+                        } catch (parseError) {
+                            console.error('Parse error:', parseError);
+                        }
+                    }
+                }
+
+                return readStream();
+            });
+        }
+
+        return readStream();
+    })
+    .catch(error => {
+        progressText.textContent = 'Connection error';
+        progressBar.classList.add('error-state');
+        console.error('Error:', error);
+    });
+});
 
         // Refresh models list
         async function refreshModels() {
@@ -437,10 +513,42 @@
             document.getElementById('overlay').classList.remove('hidden');
         }
     
-        // Close popup
+        // Show push success popup
+        function showPushSuccessPopup() {
+            const modelUrl = `https://ollama.com/${currentRepository}:${currentVersion}`;
+            document.getElementById('modelUrl').value = modelUrl;
+            document.getElementById('pushSuccessPopup').classList.remove('hidden');
+            document.getElementById('overlay').classList.remove('hidden');
+        }
+
+        // Close popups
         function closePopup() {
             document.getElementById('uploadSuccessPopup').classList.add('hidden');
             document.getElementById('overlay').classList.add('hidden');
+        }
+
+        function closePushPopup() {
+            document.getElementById('pushSuccessPopup').classList.add('hidden');
+            document.getElementById('overlay').classList.add('hidden');
+        }
+
+        // Open model link in Ollama
+        function openModelLink() {
+            const modelUrl = document.getElementById('modelUrl').value;
+            window.open(modelUrl, '_blank');
+        }
+
+        // Trigger confetti animation
+        function triggerConfetti() {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+        // Add this new function for reloading the page
+        function reloadPage() {
+            window.location.reload();
         }
     </script>
 </body>
