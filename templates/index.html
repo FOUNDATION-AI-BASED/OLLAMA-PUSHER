@@ -50,17 +50,43 @@
             background: rgba(0, 0, 0, 0.5);
             z-index: 999;
         }
+        .progress-container {
+            position: relative;
+            margin: 1rem 0;
+        }
+        .progress-bar {
+            height: 1.5rem;
+            border-radius: 0.75rem;
+            background-color: #e5e7eb;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background-color: #3b82f6;
+            transition: width 0.3s ease;
+        }
+        .progress-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        .error-state {
+            background-color: #ef4444 !important;
+        }
     </style>
 </head>
 <body class="bg-gray-100 p-8">
     <div class="max-w-4xl mx-auto border border-gray-300 p-4 rounded-lg">
         <!-- Modern Header -->
         <div class="flex justify-center mb-8">
-            <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/ollama-pusher.webp" alt="Header Image" class="w-196"> <!-- Adjust width here -->
+            <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/ollama-pusher.webp" alt="Header Image" class="w-196">
         </div>
-    </div>
-    
-        
+
         <!-- Model Upload Form -->
         <div class="bg-white p-4 rounded-lg shadow mb-8">
             <h2 class="text-xl font-semibold mb-4">Upload Model File</h2>
@@ -71,10 +97,12 @@
                 </div>
 
                 <div id="uploadProgressContainer" class="hidden">
-                    <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
-                        <div id="uploadProgressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div id="uploadProgressBar" class="progress-bar-fill" style="width: 0%"></div>
+                            <div id="uploadProgressText" class="progress-text">0%</div>
+                        </div>
                     </div>
-                    <p id="uploadProgressText" class="text-sm text-gray-600"></p>
                 </div>
 
                 <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
@@ -134,10 +162,12 @@
                 </div>
 
                 <div id="pushProgressContainer" class="hidden">
-                    <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
-                        <div id="pushProgressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div id="pushProgressBar" class="progress-bar-fill" style="width: 0%"></div>
+                            <div id="pushProgressText" class="progress-text">0%</div>
+                        </div>
                     </div>
-                    <p id="pushProgressText" class="text-sm text-gray-600"></p>
                 </div>
 
                 <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
@@ -204,7 +234,7 @@
 
         <!-- Footer with Credits -->
         <div class="credits">
-            <p>Ollama Pusher v1.1.1 | Credits: Your Name Here</p>
+            <p>Ollama Pusher v1.2 | Credits: Your Name Here</p>
         </div>
 
         <!-- Shutdown Button -->
@@ -231,39 +261,53 @@
         });
     
         // Handle model upload
-        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            const formData = new FormData(this);
-            const progressContainer = document.getElementById('uploadProgressContainer');
+            const fileInput = document.querySelector('input[type="file"]');
+            const file = fileInput.files[0];
+            const xhr = new XMLHttpRequest();
+            
             const progressBar = document.getElementById('uploadProgressBar');
             const progressText = document.getElementById('uploadProgressText');
-    
+            const progressContainer = document.getElementById('uploadProgressContainer');
+            
             progressContainer.classList.remove('hidden');
             progressBar.style.width = '0%';
             progressText.textContent = 'Starting upload...';
-    
-            try {
-                const response = await fetch('/upload_model', {
-                    method: 'POST',
-                    body: formData
-                });
-    
-                const result = await response.json();
-                if (result.error) {
-                    throw new Error(result.error);
+
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = `${percent}%`;
+                    progressText.textContent = `Uploading: ${percent}%`;
                 }
-    
-                progressBar.style.width = '100%';
-                progressText.textContent = 'Upload complete!';
-                showUploadSuccessPopup();
-            } catch (error) {
-                progressText.textContent = `Error: ${error.message}`;
-                progressBar.style.backgroundColor = 'red';
-            }
+            });
+
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        progressBar.style.width = '100%';
+                        progressText.textContent = 'Upload complete!';
+                        showUploadSuccessPopup();
+                        refreshModels();
+                    } else {
+                        const error = JSON.parse(xhr.responseText).error;
+                        progressText.textContent = `Error: ${error}`;
+                        progressBar.classList.add('error-state');
+                    }
+                }
+            };
+
+            xhr.open('POST', '/upload_model', true);
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            xhr.send(formData);
         });
-    
+
         // Handle model push
-        document.getElementById('pushForm').addEventListener('submit', async function(e) {
+        document.getElementById('pushForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
             const data = {
@@ -275,69 +319,52 @@
                 version: formData.get('version') || 'latest',
                 license: formData.get('license') || ''
             };
-    
-            const progressContainer = document.getElementById('pushProgressContainer');
+
             const progressBar = document.getElementById('pushProgressBar');
             const progressText = document.getElementById('pushProgressText');
-    
+            const progressContainer = document.getElementById('pushProgressContainer');
+            
             progressContainer.classList.remove('hidden');
             progressBar.style.width = '0%';
-            progressText.textContent = 'Starting push...';
-    
-            try {
-                const response = await fetch('/push_model', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-    
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-    
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-    
-                    const text = decoder.decode(value);
-                    const messages = text.split('\n\n');
+            progressText.textContent = 'Initializing...';
+
+            const eventSource = new EventSource(`/push_model?data=${encodeURIComponent(JSON.stringify(data))}`);
+            
+            eventSource.onmessage = function(e) {
+                try {
+                    const event = JSON.parse(e.data);
                     
-                    for (const message of messages) {
-                        if (message.startsWith('data: ')) {
-                            try {
-                                const event = JSON.parse(message.substring(6));
-                                
-                                if (event.progress) {
-                                    progressText.textContent = event.progress;
-                                    // Update progress bar width based on progress
-                                    if (event.progress.includes('100%')) {
-                                        progressBar.style.width = '100%';
-                                    } else if (event.progress.includes('50%')) {
-                                        progressBar.style.width = '50%';
-                                    } else if (event.progress.includes('25%')) {
-                                        progressBar.style.width = '25%';
-                                    } else if (event.progress.includes('75%')) {
-                                        progressBar.style.width = '75%';
-                                    }
-                                } else if (event.status === 'success') {
-                                    progressBar.style.width = '100%';
-                                    progressText.textContent = 'Push complete!';
-                                    await refreshModels();
-                                } else if (event.status === 'error') {
-                                    throw new Error(event.message);
-                                }
-                            } catch (parseError) {
-                                console.error('Parse error:', parseError);
-                                continue;
-                            }
-                        }
+                    switch(event.type) {
+                        case 'progress':
+                            progressBar.style.width = `${event.progress}%`;
+                            progressText.textContent = event.message;
+                            break;
+                            
+                        case 'success':
+                            progressBar.style.width = '100%';
+                            progressText.textContent = event.message;
+                            eventSource.close();
+                            refreshModels();
+                            break;
+                            
+                        case 'error':
+                            progressText.textContent = `Error: ${event.message}`;
+                            progressBar.classList.add('error-state');
+                            eventSource.close();
+                            break;
                     }
+                } catch (parseError) {
+                    console.error('Parse error:', parseError);
                 }
-            } catch (error) {
-                progressText.textContent = `Error: ${error.message}`;
-                progressBar.style.backgroundColor = 'red';
-            }
+            };
+
+            eventSource.onerror = function() {
+                progressText.textContent = 'Connection error';
+                progressBar.classList.add('error-state');
+                eventSource.close();
+            };
         });
-    
+
         // Refresh models list
         async function refreshModels() {
             try {
@@ -382,28 +409,25 @@
     
         // Shutdown server
         async function shutdownServer() {
-            if (!confirm('Are you sure you want to shut down the server?')) {
-                return;
-            }
+            if (!confirm('Are you sure you want to shut down the server?')) return;
             
             try {
-                const response = await fetch('/shutdown', {
-                    method: 'POST'
+                const response = await fetch('/shutdown', { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 });
-    
-                const result = await response.json();
-                if (result.status === 'success') {
-                    alert('Server is shutting down...');
-                    // Wait a moment before closing the window
-                    setTimeout(() => {
-                        window.close();
-                    }, 1000);
+                
+                if (response.ok) {
+                    alert('Server shutdown initiated. You can now close this window.');
+                    window.location.href = 'about:blank';
                 } else {
-                    alert('Error shutting down server');
+                    throw new Error('Server responded with error');
                 }
             } catch (error) {
-                alert('Error shutting down server');
-                console.error('Error:', error);
+                console.error('Shutdown error:', error);
+                alert('Server shutdown failed. Please stop the process manually.');
             }
         }
     
