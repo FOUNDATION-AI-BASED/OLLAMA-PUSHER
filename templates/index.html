@@ -95,30 +95,6 @@
             <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/ollama-pusher.webp" alt="Header Image" class="w-196">
         </div>
 
-        <!-- Model Upload Form -->
-        <div class="bg-white p-4 rounded-lg shadow mb-8">
-            <h2 class="text-xl font-semibold mb-4">Upload Model File</h2>
-            <form id="uploadForm" class="space-y-4">
-                <div>
-                    <label class="block mb-2">Select Model File:</label>
-                    <input type="file" name="file" accept=".gguf" class="w-full p-2 border rounded" required>
-                </div>
-
-                <div id="uploadProgressContainer" class="hidden">
-                    <div class="progress-container">
-                        <div class="progress-bar">
-                            <div id="uploadProgressBar" class="progress-bar-fill" style="width: 0%"></div>
-                            <div id="uploadProgressText" class="progress-text">0%</div>
-                        </div>
-                    </div>
-                </div>
-
-                <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-                    Upload Model
-                </button>
-            </form>
-        </div>
-
         <!-- Push Model Form -->
         <div class="bg-white p-4 rounded-lg shadow mb-8">
             <h2 class="text-xl font-semibold mb-4">Push Model to Ollama</h2>
@@ -184,6 +160,30 @@
             </form>
         </div>
 
+        <!-- Model Upload Form -->
+        <div class="bg-white p-4 rounded-lg shadow mb-8">
+            <h2 class="text-xl font-semibold mb-4">Upload Model File</h2>
+            <form id="uploadForm" class="space-y-4">
+                <div>
+                    <label class="block mb-2">Select Model File:</label>
+                    <input type="file" name="file" accept=".gguf" class="w-full p-2 border rounded" required>
+                </div>
+
+                <div id="uploadProgressContainer" class="hidden">
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div id="uploadProgressBar" class="progress-bar-fill" style="width: 0%"></div>
+                            <div id="uploadProgressText" class="progress-text">0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    Upload Model
+                </button>
+            </form>
+        </div>
+
         <!-- Models List -->
         <div class="bg-white p-4 rounded-lg shadow mb-8">
             <div class="flex justify-between items-center mb-4">
@@ -242,7 +242,7 @@
 
         <!-- Footer with Credits -->
         <div class="credits" align="center">
-            <p>Ollama Pusher v1.1 | Credits: dronerazzo, FOUNDATION AI BASED</p>
+            <p>Ollama Pusher v1.2 | Credits: dronerazzo, FOUNDATION AI BASED</p>
         </div>
 
         <!-- Shutdown Button -->
