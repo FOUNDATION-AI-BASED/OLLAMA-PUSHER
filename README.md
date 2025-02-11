@@ -16,6 +16,7 @@
   </a>
 </p>
 
+
 ## ✨ Features
 
 - 🖥️ Clean, modern interface for interacting with Ollama libary
@@ -24,6 +25,7 @@
 - 🔒 Privacy-focused: All proccess are being exectued locally
 - ⏰ Ready to go in under 10 minutes
 - ⚖️ Low resource consuming
+
 
 ## 🛣️ Roadmap
 
