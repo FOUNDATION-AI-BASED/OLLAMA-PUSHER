@@ -1,6 +1,6 @@
 <div align="center">
   <h1>Welcome to the Ollama Pusher Installation</h1>
-  <img src="https://raw.githubusercontent.com/dronerazzo/ollama-pusher/refs/heads/main/templates/ollama-pusher.webp" alt="Alt text" width="800">
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/ollama-pusher/refs/heads/main/templates/ollama-pusher.webp" alt="Alt text" width="800">
 </div>
 
 <div align="center">
