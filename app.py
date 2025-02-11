@@ -2,10 +2,11 @@ import os
 import platform
 import subprocess
 import sys
-from flask import Flask, render_template, jsonify, request, Response
-from pathlib import Path
-import shutil
+import re
 import json
+import shutil
+from pathlib import Path
+from flask import Flask, render_template, jsonify, request, Response
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -58,6 +59,26 @@ def save_model_metadata(repository, version, license_text, system_prompt=None):
     
     with open(metadata_file, 'w') as f:
         json.dump(metadata, f)
+
+def parse_ollama_output(line):
+    """Parse ollama's output for progress and status"""
+    if 'pulling manifest' in line:
+        return {'type': 'progress', 'message': 'Downloading model manifest...', 'progress': 10}
+    elif 'pulling layer' in line:
+        match = re.search(r'(\d+)/(\d+)', line)
+        if match:
+            current, total = map(int, match.groups())
+            progress = 10 + int((current / total) * 40)  # 10-50% range
+            return {'type': 'progress', 'message': f'Downloading layers ({current}/{total})...', 'progress': progress}
+    elif 'verifying sha256 digest' in line:
+        return {'type': 'progress', 'message': 'Verifying checksums...', 'progress': 60}
+    elif 'writing manifest' in line:
+        return {'type': 'progress', 'message': 'Writing manifest...', 'progress': 70}
+    elif 'success' in line.lower():
+        return {'type': 'success', 'message': 'Model pushed successfully!', 'progress': 100}
+    elif 'error' in line.lower():
+        return {'type': 'error', 'message': line.strip()}
+    return None
 
 @app.route('/')
 def index():
@@ -130,55 +151,58 @@ def push_model():
         repository_with_version = f"{repository}:{version}"
 
         def generate_progress():
-            create_process = subprocess.Popen(
-                ['ollama', 'create', '-f', str(modelfile_path), repository_with_version],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                bufsize=1
-            )
+            processes = {
+                'create': subprocess.Popen(
+                    ['ollama', 'create', '-f', str(modelfile_path), repository_with_version],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    bufsize=1,
+                    universal_newlines=True
+                ),
+                'push': None
+            }
 
-            while True:
-                output = create_process.stdout.readline()
-                error = create_process.stderr.readline()
+            def handle_output(process, stage):
+                while True:
+                    output = process.stdout.readline()
+                    error = process.stderr.readline()
 
-                if output == '' and error == '' and create_process.poll() is not None:
-                    break
+                    if not output and not error and process.poll() is not None:
+                        break
 
-                if output:
-                    yield f"data: {json.dumps({'progress': output.strip()})}\n\n"
-                if error:
-                    yield f"data: {json.dumps({'progress': f'Error: {error.strip()}'})}\n\n"
+                    if output:
+                        parsed = parse_ollama_output(output.strip())
+                        if parsed:
+                            yield f"data: {json.dumps(parsed)}\n\n"
 
-            if create_process.returncode != 0:
-                yield f"data: {json.dumps({'status': 'error', 'message': 'Model creation failed'})}\n\n"
-                return
+                    if error:
+                        yield f"data: {json.dumps({'type': 'error', 'message': error.strip()})}\n\n"
 
-            push_process = subprocess.Popen(
+                if process.returncode != 0:
+                    yield f"data: {json.dumps({'type': 'error', 'message': f'{stage} failed'})}\n\n"
+                    return False
+                return True
+
+            # Handle create process
+            for event in handle_output(processes['create'], 'Model creation'):
+                yield event
+
+            # Handle push process if create succeeded
+            processes['push'] = subprocess.Popen(
                 ['ollama', 'push', repository_with_version],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                bufsize=1
+                bufsize=1,
+                universal_newlines=True
             )
 
-            while True:
-                output = push_process.stdout.readline()
-                error = push_process.stderr.readline()
+            for event in handle_output(processes['push'], 'Model push'):
+                yield event
 
-                if output == '' and error == '' and push_process.poll() is not None:
-                    break
-
-                if output:
-                    yield f"data: {json.dumps({'progress': output.strip()})}\n\n"
-                if error:
-                    yield f"data: {json.dumps({'progress': f'Error: {error.strip()}'})}\n\n"
-
-            if push_process.returncode == 0:
-                save_model_metadata(repository, version, license_text, system_prompt)
-                yield f"data: {json.dumps({'status': 'success', 'message': 'Model pushed successfully'})}\n\n"
-            else:
-                yield f"data: {json.dumps({'status': 'error', 'message': 'Model push failed'})}\n\n"
+            save_model_metadata(repository, version, license_text, system_prompt)
+            yield f"data: {json.dumps({'type': 'success', 'message': 'Model pushed successfully!', 'progress': 100})}\n\n"
 
         return Response(generate_progress(), mimetype='text/event-stream')
 
