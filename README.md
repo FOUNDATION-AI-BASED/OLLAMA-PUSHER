@@ -160,8 +160,3 @@ Check if python3 is installd: python3 --version
       <img src="https://img.shields.io/badge/Upload-red?style=for-the-badge&logo=github" alt="Upload Button">
     </a>
   </div>
-
-
-******************************************************************************************************************
-
-To stop the Webui simply go back to the terminal and click ctrl and c on your keyboard!
