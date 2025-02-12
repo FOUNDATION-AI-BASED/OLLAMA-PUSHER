@@ -34,6 +34,24 @@
 - [ ] Ability to delete ollama models
 
 
+
+## ✅ Systems tested on:
+
+- [ ] MACOS MONTEREY
+- [ ] MACOS SONOMA
+- [ ] MACOS VENTURA
+- [ ] MACOS SEQUOIA
+- [ ] WINDOWS 10
+- [ ] WINDOWS 11
+- [ ] UBUNTU 20
+- [x] UBUNTU 22
+- [ ] UBUNTU 23
+- [ ] UBUNTU 24
+- [ ] DEBIAN
+- [ ] LINUX MINT
+- [ ] 
+
+
 ******************************************************************************************************************
 
 What is this tool?
