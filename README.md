@@ -44,7 +44,7 @@
 - [ ] WINDOWS 10
 - [ ] WINDOWS 11
 - [ ] UBUNTU 20
-- [✅] UBUNTU 22
+- ✅ UBUNTU 22
 - [ ] UBUNTU 23
 - [ ] UBUNTU 24
 - [ ] DEBIAN
