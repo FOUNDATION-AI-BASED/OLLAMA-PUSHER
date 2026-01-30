@@ -1,0 +1,2 @@
+FROM llama3.2
+SYSTEM """You are a helpful assistant."""

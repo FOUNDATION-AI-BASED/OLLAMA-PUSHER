@@ -152,6 +152,9 @@
                             <div id="pushProgressText" class="progress-text">0%</div>
                         </div>
                     </div>
+                    <button id="stopPushButton" type="button" onclick="stopPushOperation()" class="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                        Stop Push
+                    </button>
                 </div>
 
                 <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
@@ -286,12 +289,23 @@
     <script>
         let currentRepository = '';
         let currentVersion = '';
+        let isPushInProgress = false;
 
         // Handle model source selection
-        document.getElementById('modelSource').addEventListener('change', function() {
-            const useUploaded = this.value === 'uploaded';
+        // Initialize model source UI state
+        function initializeModelSource() {
+            const modelSource = document.getElementById('modelSource');
+            const useUploaded = modelSource.value === 'uploaded';
             document.getElementById('existingModelInputs').style.display = useUploaded ? 'none' : 'block';
             document.getElementById('uploadedModelInputs').style.display = useUploaded ? 'block' : 'none';
+        }
+
+        // Initialize on page load
+        initializeModelSource();
+
+        // Handle model source selection changes
+        document.getElementById('modelSource').addEventListener('change', function() {
+            initializeModelSource();
         });
     
         // Handle model upload
@@ -346,6 +360,13 @@
 // Handle model push
 document.getElementById('pushForm').addEventListener('submit', function(e) {
     e.preventDefault();
+    
+    // Prevent multiple simultaneous pushes
+    if (isPushInProgress) {
+        alert('A push operation is already in progress. Please wait or use the Stop button.');
+        return;
+    }
+    
     const formData = new FormData(this);
     const data = {
         repository: formData.get('repository'),
@@ -363,20 +384,30 @@ document.getElementById('pushForm').addEventListener('submit', function(e) {
     const progressBar = document.getElementById('pushProgressBar');
     const progressText = document.getElementById('pushProgressText');
     const progressContainer = document.getElementById('pushProgressContainer');
+    const stopButton = document.getElementById('stopPushButton');
     
+    // Set push in progress flag and show UI elements
+    isPushInProgress = true;
     progressContainer.classList.remove('hidden');
+    stopButton.classList.remove('hidden');
     progressBar.style.width = '0%';
     progressText.textContent = 'Initializing...';
+
+    // Create AbortController for timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minute timeout
 
     // Use POST instead of GET
     fetch('/push_model', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: {           'Content-Type': 'application/json',       },
         body: JSON.stringify(data),
+        signal: controller.signal,
     })
     .then(response => {
+        // Clear timeout on successful response
+        clearTimeout(timeoutId);
+        
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
@@ -411,6 +442,9 @@ document.getElementById('pushForm').addEventListener('submit', function(e) {
                                     progressBar.style.width = '100%';
                                     progressText.textContent = event.message;
                                     triggerConfetti();
+                                    // Reset push state
+                                    isPushInProgress = false;
+                                    document.getElementById('stopPushButton').classList.add('hidden');
                                     setTimeout(() => {
                                         showPushSuccessPopup();
                                         refreshModels();
@@ -420,6 +454,9 @@ document.getElementById('pushForm').addEventListener('submit', function(e) {
                                 case 'error':
                                     progressText.textContent = `Error: ${event.message}`;
                                     progressBar.classList.add('error-state');
+                                    // Reset push state on error
+                                    isPushInProgress = false;
+                                    document.getElementById('stopPushButton').classList.add('hidden');
                                     break;
                             }
                         } catch (parseError) {
@@ -435,11 +472,58 @@ document.getElementById('pushForm').addEventListener('submit', function(e) {
         return readStream();
     })
     .catch(error => {
-        progressText.textContent = 'Connection error';
+        // Clear timeout on error
+        clearTimeout(timeoutId);
+        
+        let errorMessage = 'Connection error';
+        if (error.name === 'AbortError') {
+            errorMessage = 'Request aborted - operation timed out';
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+        
+        progressText.textContent = errorMessage;
         progressBar.classList.add('error-state');
-        console.error('Error:', error);
+        // Reset push state on connection error
+        isPushInProgress = false;
+        document.getElementById('stopPushButton').classList.add('hidden');
+        console.error('Push error:', error);
     });
 });
+
+        // Stop push operation
+        async function stopPushOperation() {
+            if (!isPushInProgress) return;
+            
+            try {
+                const response = await fetch('/stop_push', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    const progressBar = document.getElementById('pushProgressBar');
+                    const progressText = document.getElementById('pushProgressText');
+                    const progressContainer = document.getElementById('pushProgressContainer');
+                    
+                    progressText.textContent = 'Push stopped by user';
+                    progressBar.classList.add('error-state');
+                    
+                    // Hide progress and reset after a delay
+                    setTimeout(() => {
+                        progressContainer.classList.add('hidden');
+                        progressBar.classList.remove('error-state');
+                        progressBar.style.width = '0%';
+                        progressText.textContent = '0%';
+                        isPushInProgress = false;
+                    }, 2000);
+                }
+            } catch (error) {
+                console.error('Error stopping push:', error);
+                alert('Error stopping push operation');
+            }
+        }
 
         // Refresh models list
         async function refreshModels() {
