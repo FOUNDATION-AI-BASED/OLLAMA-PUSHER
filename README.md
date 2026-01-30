@@ -134,7 +134,7 @@ Check if python3 is installd: python3 --version
 
 <div align="center" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; padding: 20px;">
   <div style="text-align: center; max-width: 200px;">
-    <p><strong>1. Start with Installation and Setup</strong></p>
+    <p><strong>1. Start with the Setup</strong></p>
     <a href="https://github.com/FOUNDATION-AI-BASED/ollama-pusher/blob/main/README-INSTALLATION.MD">
       <img src="https://img.shields.io/badge/Start-green?style=for-the-badge&logo=github" alt="Start Button">
     </a>
