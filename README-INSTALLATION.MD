@@ -13,7 +13,7 @@ Installation Process:
 
 git clone https://github.com/FOUNDATION-AI-BASED/OLLAMA-PUSHER.git
 
-cd ollama-pusher
+cd OLLAMA-PUSHER
 
 sudo python3 app.py
 
@@ -35,7 +35,7 @@ Installation Process:
 
 git clone https://github.com/FOUNDATION-AI-BASED/OLLAMA-PUSHER.git
 
-cd ollama-pusher
+cd OLLAMA-PUSHER
 
 Use Administrator Command Prompt
 
