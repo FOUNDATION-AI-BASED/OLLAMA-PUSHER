@@ -7,17 +7,69 @@
 
 *******************************************************************************************************************
 
+MACOS & LINUX (UBUNTU, DEBIAN, DEBIAN BASED LINUX DISTROS)
+
 Installation Process:
 
 git clone https://github.com/FOUNDATION-AI-BASED/OLLAMA-PUSHER.git
 
-cd ollama-pusher
+cd OLLAMA-PUSHER
 
 sudo python3 app.py
 
 Choose 0 for running on your ip adress or if you want to only access it from the same device choose 1!
 
 Type in the port from where you want to access the webui from!
+
+Now Access the Webui! 
+
+If you choose 0 earlier: ipadress:port 
+
+if you choose 1 earlier: localhost:port or 127.0.0.1:port
+
+*******************************************************************************************************************
+
+NONE DEBIAN BASED DISTROS
+
+Installation Process:
+
+git clone https://github.com/FOUNDATION-AI-BASED/OLLAMA-PUSHER.git
+
+cd OLLAMA-PUSHER
+
+python3 app.py
+
+Choose 0 for running on your ip adress or if you want to only access it from the same device choose 1!
+
+Type in the port from where you want to access the webui from!
+
+Now Access the Webui! 
+
+If you choose 0 earlier: ipadress:port 
+
+if you choose 1 earlier: localhost:port or 127.0.0.1:port
+
+*******************************************************************************************************************
+
+WINDOWS 10 & 11
+
+Installation Process:
+
+git clone https://github.com/FOUNDATION-AI-BASED/OLLAMA-PUSHER.git
+
+cd OLLAMA-PUSHER
+
+Use Administrator Command Prompt
+
+python app.py 
+
+Use only Version 3 after python if you have multiple versions of python installed: python3 app.py
+
+Choose 0 for running on your ip adress or if you want to only access it from the same device choose 1!
+
+Type in the port from where you want to access the webui from!
+
+*******************************************************************************************************************
 
 Now Access the Webui! 
 
