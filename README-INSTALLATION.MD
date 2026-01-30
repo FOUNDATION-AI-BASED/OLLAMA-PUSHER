@@ -9,7 +9,7 @@
 
 Installation Process:
 
-git clone https://github.com/dronerazzo/ollama-pusher.git
+git clone https://github.com/FOUNDATION-AI-BASED/OLLAMA-PUSHER.git
 
 cd ollama-pusher
 
