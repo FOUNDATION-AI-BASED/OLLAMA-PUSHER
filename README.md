@@ -14,9 +14,10 @@
 <div align="center">
   <h2>UI Showcase</h2>
   <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/OLLAMA-PUSHER/refs/heads/main/templates/qs_26-January-31_02-14.png" alt="Alt text" width="800">
-  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/OLLAMA-PUSHER/refs/heads/main/templates/qs_26-January-31_02-14(2).png" alt="Alt text" width="800">
   <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/OLLAMA-PUSHER/refs/heads/main/templates/qs_26-January-31_02-14(3).png" alt="Alt text" width="800">
   <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/OLLAMA-PUSHER/refs/heads/main/templates/qs_26-January-31_02-14(4).png" alt="Alt text" width="800">
+  <h3>Pushed Model Message Showcase</h3>
+  <img src="https://raw.githubusercontent.com/FOUNDATION-AI-BASED/OLLAMA-PUSHER/refs/heads/main/templates/qs_26-January-31_02-14(2).png" alt="Alt text" width="800">
 </div>
 
 ******************************************************************************************************************
