@@ -89,7 +89,15 @@ def send_event(type_='progress', message='', progress=None):
     data = {'type': type_, 'message': message}
     if progress is not None:
         data['progress'] = progress
-    return f"data: {json.dumps(data)}\n\n"
+    # Ensure proper encoding for SSE
+    try:
+        json_data = json.dumps(data, ensure_ascii=False)
+        return f"data: {json_data}\n\n"
+    except (TypeError, ValueError) as e:
+        # Fallback for encoding issues
+        data['message'] = str(message).encode('utf-8', errors='replace').decode('utf-8')
+        json_data = json.dumps(data, ensure_ascii=False)
+        return f"data: {json_data}\n\n"
 
 def parse_ollama_output(line):
     """Parse ollama's output for progress and status"""
@@ -226,7 +234,12 @@ def push_model():
         def generate_progress():
             global current_push_process, current_create_process
             try:
-                yield send_event('progress', 'Starting model creation...', 5)
+                # Provide initial feedback based on model type
+                if use_uploaded and uploaded_model:
+                    yield send_event('progress', f'Creating model from uploaded file: {uploaded_model}. This may take several minutes for large models...', 5)
+                else:
+                    yield send_event('progress', f'Creating model from base: {base_model}. This may take several minutes for large models...', 5)
+                
                 last_heartbeat = time.time()
                 
                 # Create model
@@ -267,6 +280,24 @@ def push_model():
                         print(f"Create stderr: {error.strip()}")
                         # Filter out non-error messages that might appear in stderr
                         if "transferring model data" in error.lower():
+                            # This indicates upload progress for large models
+                            yield send_event('progress', 'Uploading model data to registry... This may take several minutes for large models.', last_progress + 5)
+                            continue
+                        elif "using existing layer" in error.lower():
+                            # This is normal progress for base models
+                            yield send_event('progress', 'Using existing model layers...', last_progress + 2)
+                            continue
+                        elif "writing manifest" in error.lower():
+                            yield send_event('progress', 'Writing model manifest...', 80)
+                            continue
+                        elif "success" in error.lower():
+                            yield send_event('progress', 'Model creation completed successfully!', 85)
+                            continue
+                        yield send_event('error', error.strip())
+                        continue
+                        print(f"Create stderr: {error.strip()}")
+                        # Filter out non-error messages that might appear in stderr
+                        if "transferring model data" in error.lower():
                             continue
                         yield send_event('error', error.strip())
                         continue
@@ -281,14 +312,16 @@ def push_model():
                                 last_progress = progress
                                 yield send_event(type_, message, progress)
 
-                if current_create_process.returncode != 0:
-                    yield send_event('error', 'Model creation failed')
+                # Check if process exists and get return code safely
+                return_code = current_create_process.returncode if current_create_process else -1
+                if return_code != 0:
+                    yield send_event('error', f'Model creation failed with return code {return_code}')
                     return
-                
                 current_create_process = None
 
-                # Push model
-                yield send_event('progress', 'Starting model push...', 85)
+                # Push model with enhanced progress feedback
+                yield send_event('progress', 'Starting model push to registry...', 85)
+                yield send_event('progress', 'Please be patient - uploading large models can take several minutes...', 86)
                 
                 current_push_process = subprocess.Popen(
                     [ollama_cmd, 'push', repository_with_version],
@@ -307,7 +340,8 @@ def push_model():
                 while True:
                     # Send heartbeat every 15 seconds to keep connection alive
                     if time.time() - last_heartbeat > 15:
-                        yield send_event('heartbeat', 'keepalive', 85)
+                        elapsed = int(time.time() - push_started)
+                        yield send_event('heartbeat', f'Upload in progress... ({elapsed}s elapsed)', 87)
                         last_heartbeat = time.time()
                     
                     # Check if process still exists
@@ -324,7 +358,7 @@ def push_model():
                     if time.time() - push_started > timeout:
                         if current_push_process and current_push_process.poll() is None:
                             current_push_process.terminate()
-                        yield send_event('error', 'Push operation timed out')
+                        yield send_event('error', 'Push operation timed out after 10 minutes')
                         return
 
                     if current_push_process.poll() is not None and not output and not error:
@@ -333,7 +367,15 @@ def push_model():
                     if error:
                         # Log the actual error output for debugging
                         print(f"Push stderr: {error.strip()}")
-                        yield send_event('error', error.strip())
+                        # Filter out progress messages
+                        error_msg = error.strip()
+                        if "pushing" in error_msg.lower() and "layer" in error_msg.lower():
+                            yield send_event('progress', f'Uploading layer: {error_msg}', 88)
+                            continue
+                        elif "writing manifest" in error_msg.lower():
+                            yield send_event('progress', 'Writing manifest to registry...', 94)
+                            continue
+                        yield send_event('error', error_msg)
                         continue
 
                     if output:
@@ -346,14 +388,18 @@ def push_model():
                                 last_progress = progress
                                 yield send_event(type_, message, progress)
                 
-                return_code = current_push_process.returncode
+                # Check if process exists and get return code safely
+                return_code = current_push_process.returncode if current_push_process else -1
                 current_push_process = None
 
                 if return_code == 0:
-                    # Verify model is actually available in registry
-                    yield send_event('progress', 'Verifying model in registry...', 98)
+                    # Enhanced verification with pull test
+                    yield send_event('progress', 'Verifying model in registry...', 95)
                     try:
                         ollama_cmd = get_ollama_command()
+                        model_name = f"{repository}:{version}"
+                        
+                        # First check if model appears in local list
                         verify_result = subprocess.run(
                             [ollama_cmd, 'list'],
                             capture_output=True,
@@ -363,23 +409,80 @@ def push_model():
                             errors='replace'
                         )
                         
-                        if verify_result.returncode == 0:
-                            # Check if our model appears in the list
-                            model_name = f"{repository}:{version}"
-                            if model_name in verify_result.stdout:
+                        if verify_result.returncode == 0 and model_name in verify_result.stdout:
+                            yield send_event('progress', 'Model found in local registry, performing pull test...', 96)
+                            
+                            # Delete local model to ensure pull test is valid
+                            yield send_event('progress', 'Removing local model for pull verification...', 97)
+                            delete_result = subprocess.run(
+                                [ollama_cmd, 'rm', model_name],
+                                capture_output=True,
+                                text=True,
+                                timeout=30,
+                                encoding='utf-8',
+                                errors='replace'
+                            )
+                            
+                            # Now attempt to pull the model to verify it's in the remote registry
+                            yield send_event('progress', 'Pulling model from registry to verify availability...', 98)
+                            
+                            pull_process = subprocess.Popen(
+                                [ollama_cmd, 'pull', model_name],
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                text=True,
+                                bufsize=1,
+                                universal_newlines=True,
+                                encoding='utf-8',
+                                errors='replace'
+                            )
+                            
+                            pull_started = time.time()
+                            pull_timeout = 600 # 10 minutes for verification pull
+                            
+                            while True:
+                                # Send heartbeat every 15 seconds
+                                if time.time() - last_heartbeat > 15:
+                                    elapsed = int(time.time() - pull_started)
+                                    yield send_event('heartbeat', f'Verification in progress... ({elapsed}s elapsed)', 98)
+                                    last_heartbeat = time.time()
+                                
+                                if pull_process.poll() is not None:
+                                    break
+                                    
+                                # Check for timeout
+                                if time.time() - pull_started > pull_timeout:
+                                    pull_process.terminate()
+                                    yield send_event('error', 'Verification pull timed out')
+                                    return
+                                    
+                                time.sleep(0.5)
+                            
+                            if pull_process.returncode == 0:
+                                # Clean up the pulled model (optional)
+                                yield send_event('progress', 'Cleaning up verification model...', 99)
+                                subprocess.run(
+                                    [ollama_cmd, 'rm', model_name],
+                                    capture_output=True,
+                                    text=True,
+                                    timeout=30,
+                                    encoding='utf-8',
+                                    errors='replace'
+                                )
+                                
                                 save_model_metadata(repository, version, license_text, system_prompt)
-                                yield send_event('progress', 'Finalizing...', 99)
-                                yield send_event('success', 'Model pushed successfully!', 100)
+                                yield send_event('success', 'Model pushed and verified successfully! The model is available in the registry.', 100)
                             else:
-                                yield send_event('error', f'Model {model_name} not found in registry after push. This may indicate the push failed silently.')
+                                stderr_output = pull_process.stderr.read() if pull_process.stderr else "Unknown error"
+                                yield send_event('error', f'Pull verification failed. The model may not be available in the remote registry. Error: {stderr_output}')
                         else:
-                            yield send_event('error', 'Could not verify model in registry')
+                            yield send_event('error', f'Model {model_name} not found in local registry after push.')
                     except subprocess.TimeoutExpired:
-                        yield send_event('error', 'Verification timeout - model may not be available yet')
+                        yield send_event('error', 'Verification timeout - model may not be available yet or is too large')
                     except Exception as verify_error:
                         yield send_event('error', f'Verification error: {str(verify_error)}')
                 else:
-                    yield send_event('error', 'Model push failed')
+                    yield send_event('error', f'Model push failed with return code {return_code}')
 
             except Exception as e:
                 print(f"Error in generate_progress: {str(e)}")

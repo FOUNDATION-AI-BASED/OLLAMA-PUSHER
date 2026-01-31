@@ -245,7 +245,7 @@
 
         <!-- Footer with Credits -->
         <div class="credits" align="center">
-            <p>Ollama Pusher v1.2 | Credits: dronerazzo, FOUNDATION AI BASED</p>
+            <p>Ollama Pusher v1.3 | Credits: dronerazzo, FOUNDATION AI BASED</p>
         </div>
 
         <!-- Shutdown Button -->
@@ -357,139 +357,143 @@
             xhr.send(formData);
         });
 
-// Handle model push
-document.getElementById('pushForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    // Prevent multiple simultaneous pushes
-    if (isPushInProgress) {
-        alert('A push operation is already in progress. Please wait or use the Stop button.');
-        return;
-    }
-    
-    const formData = new FormData(this);
-    const data = {
-        repository: formData.get('repository'),
-        base_model: formData.get('base_model'),
-        system_prompt: formData.get('system_prompt'),
-        use_uploaded: document.getElementById('modelSource').value === 'uploaded',
-        uploaded_model: formData.get('uploaded_model'),
-        version: formData.get('version') || 'latest',
-        license: formData.get('license') || ''
-    };
+        // Handle model push
+        document.getElementById('pushForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Prevent multiple simultaneous pushes
+            if (isPushInProgress) {
+                alert('A push operation is already in progress. Please wait or use the Stop button.');
+                return;
+            }
+            
+            const formData = new FormData(this);
+            const data = {
+                repository: formData.get('repository'),
+                base_model: formData.get('base_model'),
+                system_prompt: formData.get('system_prompt'),
+                use_uploaded: document.getElementById('modelSource').value === 'uploaded',
+                uploaded_model: formData.get('uploaded_model'),
+                version: formData.get('version') || 'latest',
+                license: formData.get('license') || ''
+            };
 
-    currentRepository = data.repository;
-    currentVersion = data.version;
+            currentRepository = data.repository;
+            currentVersion = data.version;
 
-    const progressBar = document.getElementById('pushProgressBar');
-    const progressText = document.getElementById('pushProgressText');
-    const progressContainer = document.getElementById('pushProgressContainer');
-    const stopButton = document.getElementById('stopPushButton');
-    
-    // Set push in progress flag and show UI elements
-    isPushInProgress = true;
-    progressContainer.classList.remove('hidden');
-    stopButton.classList.remove('hidden');
-    progressBar.style.width = '0%';
-    progressText.textContent = 'Initializing...';
+            const progressBar = document.getElementById('pushProgressBar');
+            const progressText = document.getElementById('pushProgressText');
+            const progressContainer = document.getElementById('pushProgressContainer');
+            const stopButton = document.getElementById('stopPushButton');
+            
+            // Set push in progress flag and show UI elements
+            isPushInProgress = true;
+            progressContainer.classList.remove('hidden');
+            stopButton.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            progressText.textContent = 'Initializing...';
 
-    // Create AbortController for timeout handling
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minute timeout
+            // Create AbortController for timeout handling
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 900000); // 15 minute timeout
 
-    // Use POST instead of GET
-    fetch('/push_model', {
-        method: 'POST',
-        headers: {           'Content-Type': 'application/json',       },
-        body: JSON.stringify(data),
-        signal: controller.signal,
-    })
-    .then(response => {
-        // Clear timeout on successful response
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.body.getReader();
-    })
-    .then(reader => {
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        function readStream() {
-            return reader.read().then(({ done, value }) => {
-                if (done) {
-                    return;
+            // Use POST instead of GET
+            fetch('/push_model', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+                signal: controller.signal,
+            })
+            .then(response => {
+                // Clear timeout on successful response
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
+                return response.body.getReader();
+            })
+            .then(reader => {
+                const decoder = new TextDecoder();
+                let buffer = '';
 
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n\n');
-                buffer = lines.pop() || '';
-
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        try {
-                            const event = JSON.parse(line.substring(6));
-                            
-                            switch(event.type) {
-                                case 'progress':
-                                    progressBar.style.width = `${event.progress}%`;
-                                    progressText.textContent = event.message;
-                                    break;
-                                    
-                                case 'success':
-                                    progressBar.style.width = '100%';
-                                    progressText.textContent = event.message;
-                                    triggerConfetti();
-                                    // Reset push state
-                                    isPushInProgress = false;
-                                    document.getElementById('stopPushButton').classList.add('hidden');
-                                    setTimeout(() => {
-                                        showPushSuccessPopup();
-                                        refreshModels();
-                                    }, 1000);
-                                    break;
-                                    
-                                case 'error':
-                                    progressText.textContent = `Error: ${event.message}`;
-                                    progressBar.classList.add('error-state');
-                                    // Reset push state on error
-                                    isPushInProgress = false;
-                                    document.getElementById('stopPushButton').classList.add('hidden');
-                                    break;
-                            }
-                        } catch (parseError) {
-                            console.error('Parse error:', parseError);
+                function readStream() {
+                    return reader.read().then(({ done, value }) => {
+                        if (done) {
+                            return;
                         }
-                    }
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n\n');
+                        buffer = lines.pop() || '';
+
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const event = JSON.parse(line.substring(6));
+                                    
+                                    switch(event.type) {
+                                        case 'progress':
+                                            progressBar.style.width = `${event.progress}%`;
+                                            progressText.textContent = event.message;
+                                            break;
+                                            
+                                        case 'heartbeat':
+                                            if (event.message) {
+                                                progressText.textContent = event.message;
+                                            }
+                                            console.log('Heartbeat received:', event.message);
+                                            break;
+                                            
+                                        case 'success':
+                                            progressBar.style.width = '100%';
+                                            progressText.textContent = event.message;
+                                            triggerConfetti();
+                                            isPushInProgress = false;
+                                            document.getElementById('stopPushButton').classList.add('hidden');
+                                            setTimeout(() => {
+                                                showPushSuccessPopup();
+                                                refreshModels();
+                                            }, 1000);
+                                            break;
+                                            
+                                        case 'error':
+                                            progressText.textContent = `Error: ${event.message}`;
+                                            progressBar.classList.add('error-state');
+                                            isPushInProgress = false;
+                                            document.getElementById('stopPushButton').classList.add('hidden');
+                                            break;
+                                    }
+                                } catch (parseError) {
+                                    console.error('Parse error:', parseError);
+                                }
+                            }
+                        }
+
+                        return readStream();
+                    });
                 }
 
                 return readStream();
+            })
+            .catch(error => {
+                clearTimeout(timeoutId);
+                
+                let errorMessage = 'Connection error';
+                if (error.name === 'AbortError') {
+                    errorMessage = 'Request aborted - operation timed out after 15 minutes.';
+                } else if (error.message) {
+                    errorMessage = `Network error: ${error.message}`;
+                }
+                
+                progressText.textContent = errorMessage;
+                progressBar.classList.add('error-state');
+                isPushInProgress = false;
+                document.getElementById('stopPushButton').classList.add('hidden');
+                
+                console.error('Push error:', error);
             });
-        }
-
-        return readStream();
-    })
-    .catch(error => {
-        // Clear timeout on error
-        clearTimeout(timeoutId);
-        
-        let errorMessage = 'Connection error';
-        if (error.name === 'AbortError') {
-            errorMessage = 'Request aborted - operation timed out';
-        } else if (error.message) {
-            errorMessage = error.message;
-        }
-        
-        progressText.textContent = errorMessage;
-        progressBar.classList.add('error-state');
-        // Reset push state on connection error
-        isPushInProgress = false;
-        document.getElementById('stopPushButton').classList.add('hidden');
-        console.error('Push error:', error);
-    });
-});
+        });
 
         // Stop push operation
         async function stopPushOperation() {
@@ -510,7 +514,6 @@ document.getElementById('pushForm').addEventListener('submit', function(e) {
                     progressText.textContent = 'Push stopped by user';
                     progressBar.classList.add('error-state');
                     
-                    // Hide progress and reset after a delay
                     setTimeout(() => {
                         progressContainer.classList.add('hidden');
                         progressBar.classList.remove('error-state');
@@ -604,24 +607,24 @@ document.getElementById('pushForm').addEventListener('submit', function(e) {
             document.getElementById('pushSuccessPopup').classList.remove('hidden');
             document.getElementById('overlay').classList.remove('hidden');
         }
-
+    
         // Close popups
         function closePopup() {
             document.getElementById('uploadSuccessPopup').classList.add('hidden');
             document.getElementById('overlay').classList.add('hidden');
         }
-
+    
         function closePushPopup() {
             document.getElementById('pushSuccessPopup').classList.add('hidden');
             document.getElementById('overlay').classList.add('hidden');
         }
-
+    
         // Open model link in Ollama
         function openModelLink() {
             const modelUrl = document.getElementById('modelUrl').value;
             window.open(modelUrl, '_blank');
         }
-
+    
         // Trigger confetti animation
         function triggerConfetti() {
             confetti({
@@ -634,6 +637,7 @@ document.getElementById('pushForm').addEventListener('submit', function(e) {
         function reloadPage() {
             window.location.reload();
         }
+
     </script>
 </body>
 </html>
