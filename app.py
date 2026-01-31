@@ -8,6 +8,7 @@ import shutil
 import time
 import signal
 import threading
+import queue
 from pathlib import Path
 from flask import Flask, render_template, jsonify, request, Response
 from werkzeug.utils import secure_filename
@@ -17,6 +18,14 @@ app = Flask(__name__)
 # Global variables to track running processes
 current_push_process = None
 current_create_process = None
+
+def enqueue_output(out, q):
+    try:
+        for line in iter(out.readline, ''):
+            q.put(line)
+        out.close()
+    except Exception:
+        pass
 
 def get_ollama_public_key():
     system = platform.system()
@@ -63,9 +72,31 @@ def get_uploaded_models():
 def get_installed_models():
     try:
         ollama_cmd = get_ollama_command()
-        result = subprocess.run([ollama_cmd, 'list'], capture_output=True, text=True)
+        # Use utf-8 encoding and replace errors to handle potential special characters
+        result = subprocess.run(
+            [ollama_cmd, 'list'], 
+            capture_output=True, 
+            text=True, 
+            encoding='utf-8', 
+            errors='replace'
+        )
         if result.returncode == 0:
-            return [line.strip() for line in result.stdout.split('\n') if line.strip()]
+            models = []
+            lines = result.stdout.strip().split('\n')
+            
+            # Skip header line if present
+            start_idx = 0
+            if lines and 'NAME' in lines[0] and 'ID' in lines[0]:
+                start_idx = 1
+                
+            for line in lines[start_idx:]:
+                if line.strip():
+                    # Extract the first column (model name)
+                    # Split by whitespace and take the first part
+                    parts = line.split()
+                    if parts:
+                        models.append(parts[0])
+            return models
         return []
     except Exception as e:
         print(f"Error getting installed models: {e}")
@@ -166,21 +197,32 @@ def stop_push():
     
     stopped = False
     
-    if current_create_process and current_create_process.poll() is None:
-        try:
-            current_create_process.terminate()
-            current_create_process = None
+    def kill_process(proc):
+        if proc and proc.poll() is None:
+            try:
+                if platform.system() == 'Windows':
+                    # More robust kill on Windows
+                    subprocess.run(['taskkill', '/PID', str(proc.pid), '/F'], capture_output=True)
+                else:
+                    proc.terminate()
+                    proc.wait(timeout=5)
+                    if proc.poll() is None:
+                        proc.kill()
+                return True
+            except Exception as e:
+                print(f"Error killing process {proc.pid}: {e}")
+                return False
+        return False
+    
+    if current_create_process:
+        if kill_process(current_create_process):
             stopped = True
-        except Exception as e:
-            print(f"Error stopping create process: {e}")
+        current_create_process = None
             
-    if current_push_process and current_push_process.poll() is None:
-        try:
-            current_push_process.terminate()
-            current_push_process = None
+    if current_push_process:
+        if kill_process(current_push_process):
             stopped = True
-        except Exception as e:
-            print(f"Error stopping push process: {e}")
+        current_push_process = None
             
     if stopped:
         return jsonify({'status': 'success', 'message': 'Operation stopped'})
@@ -255,73 +297,79 @@ def push_model():
                     errors='replace'
                 )
 
+                # Use queues for non-blocking I/O
+                q_stdout = queue.Queue()
+                q_stderr = queue.Queue()
+                t_stdout = threading.Thread(target=enqueue_output, args=(current_create_process.stdout, q_stdout))
+                t_stderr = threading.Thread(target=enqueue_output, args=(current_create_process.stderr, q_stderr))
+                t_stdout.daemon = True
+                t_stderr.daemon = True
+                t_stdout.start()
+                t_stderr.start()
+
                 last_progress = 5
                 while True:
-                    # Send heartbeat every 15 seconds to keep connection alive
+                    # Send heartbeat every 15 seconds
                     if time.time() - last_heartbeat > 15:
                         yield send_event('heartbeat', 'keepalive', last_progress)
                         last_heartbeat = time.time()
                     
-                    # Check if process still exists
-                    if current_create_process is None or current_create_process.poll() is not None:
+                    # Check if process ended
+                    if current_create_process is None:
                         break
                     
+                    process_ended = current_create_process.poll() is not None
+                    
+                    # Process stdout
                     try:
-                        output = current_create_process.stdout.readline() if current_create_process.stdout else ''
-                        error = current_create_process.stderr.readline() if current_create_process.stderr else ''
-                    except:
+                        while True:
+                            line = q_stdout.get_nowait()
+                            print(f"Create stdout: {line.strip()}")
+                            result = parse_ollama_output(line.strip())
+                            if result:
+                                type_, message, progress = result
+                                if progress and progress > last_progress:
+                                    last_progress = progress
+                                    yield send_event(type_, message, progress)
+                    except queue.Empty:
+                        pass
+                        
+                    # Process stderr
+                    try:
+                        while True:
+                            line = q_stderr.get_nowait()
+                            error = line.strip()
+                            if not error: continue
+                            
+                            print(f"Create stderr: {error}")
+                            if "transferring model data" in error.lower():
+                                yield send_event('progress', 'Uploading model data to registry... This may take several minutes for large models.', last_progress + 5)
+                            elif "using existing layer" in error.lower():
+                                yield send_event('progress', 'Using existing model layers...', last_progress + 2)
+                            elif "writing manifest" in error.lower():
+                                yield send_event('progress', 'Writing model manifest...', 80)
+                            elif "success" in error.lower():
+                                yield send_event('progress', 'Model creation completed successfully!', 85)
+                            elif "error" in error.lower():
+                                yield send_event('error', error)
+                    except queue.Empty:
+                        pass
+
+                    if process_ended and q_stdout.empty() and q_stderr.empty():
                         break
+                        
+                    time.sleep(0.1)
 
-                    if current_create_process.poll() is not None and not output and not error:
-                        break
-
-                    if error:
-                        # Log the actual error output for debugging
-                        print(f"Create stderr: {error.strip()}")
-                        # Filter out non-error messages that might appear in stderr
-                        if "transferring model data" in error.lower():
-                            # This indicates upload progress for large models
-                            yield send_event('progress', 'Uploading model data to registry... This may take several minutes for large models.', last_progress + 5)
-                            continue
-                        elif "using existing layer" in error.lower():
-                            # This is normal progress for base models
-                            yield send_event('progress', 'Using existing model layers...', last_progress + 2)
-                            continue
-                        elif "writing manifest" in error.lower():
-                            yield send_event('progress', 'Writing model manifest...', 80)
-                            continue
-                        elif "success" in error.lower():
-                            yield send_event('progress', 'Model creation completed successfully!', 85)
-                            continue
-                        yield send_event('error', error.strip())
-                        continue
-                        print(f"Create stderr: {error.strip()}")
-                        # Filter out non-error messages that might appear in stderr
-                        if "transferring model data" in error.lower():
-                            continue
-                        yield send_event('error', error.strip())
-                        continue
-
-                    if output:
-                        # Log the actual output for debugging
-                        print(f"Create stdout: {output.strip()}")
-                        result = parse_ollama_output(output.strip())
-                        if result:
-                            type_, message, progress = result
-                            if progress and progress > last_progress:
-                                last_progress = progress
-                                yield send_event(type_, message, progress)
-
-                # Check if process exists and get return code safely
+                # Check return code
                 return_code = current_create_process.returncode if current_create_process else -1
                 if return_code != 0:
                     yield send_event('error', f'Model creation failed with return code {return_code}')
                     return
                 current_create_process = None
 
-                # Push model with enhanced progress feedback
+                # Push model
                 yield send_event('progress', 'Starting model push to registry...', 85)
-                yield send_event('progress', 'Please be patient - uploading large models can take several minutes...', 86)
+                yield send_event('progress', 'Please be patient - uploading large models can take several minutes depending on size and connection speed...', 86)
                 
                 current_push_process = subprocess.Popen(
                     [ollama_cmd, 'push', repository_with_version],
@@ -334,72 +382,98 @@ def push_model():
                     errors='replace'
                 )
 
+                # Use queues for non-blocking I/O
+                q_stdout = queue.Queue()
+                q_stderr = queue.Queue()
+                t_stdout = threading.Thread(target=enqueue_output, args=(current_push_process.stdout, q_stdout))
+                t_stderr = threading.Thread(target=enqueue_output, args=(current_push_process.stderr, q_stderr))
+                t_stdout.daemon = True
+                t_stderr.daemon = True
+                t_stdout.start()
+                t_stderr.start()
+
                 push_started = time.time()
-                timeout = 600  # Increased timeout to 10 minutes
+                timeout = 900  # 15 minutes
+                last_heartbeat = time.time()
+                last_progress = 86
                 
                 while True:
-                    # Send heartbeat every 15 seconds to keep connection alive
+                    # Heartbeat
                     if time.time() - last_heartbeat > 15:
                         elapsed = int(time.time() - push_started)
                         yield send_event('heartbeat', f'Upload in progress... ({elapsed}s elapsed)', 87)
                         last_heartbeat = time.time()
-                    
-                    # Check if process still exists
-                    if current_push_process is None or current_push_process.poll() is not None:
-                        break
-                    
-                    try:
-                        output = current_push_process.stdout.readline() if current_push_process.stdout else ''
-                        error = current_push_process.stderr.readline() if current_push_process.stderr else ''
-                    except:
-                        break
 
-                    # Check for timeout
+                    # Check process status
+                    if current_push_process is None:
+                        break
+                        
+                    process_ended = current_push_process.poll() is not None
+                    
+                    # Check timeout
                     if time.time() - push_started > timeout:
-                        if current_push_process and current_push_process.poll() is None:
+                        if current_push_process.poll() is None:
                             current_push_process.terminate()
-                        yield send_event('error', 'Push operation timed out after 10 minutes')
+                        yield send_event('error', 'Push operation timed out after 15 minutes')
                         return
 
-                    if current_push_process.poll() is not None and not output and not error:
+                    # Process stdout
+                    try:
+                        while True:
+                            line = q_stdout.get_nowait()
+                            print(f"Push stdout: {line.strip()}")
+                            result = parse_ollama_output(line.strip())
+                            if result:
+                                type_, message, progress = result
+                                if progress and progress > last_progress:
+                                    last_progress = progress
+                                    yield send_event(type_, message, progress)
+                    except queue.Empty:
+                        pass
+
+                    # Process stderr
+                    try:
+                        while True:
+                            line = q_stderr.get_nowait()
+                            error = line.strip()
+                            if not error: continue
+                            
+                            print(f"Push stderr: {error}")
+                            error_msg = error.lower()
+                            if "pushing" in error_msg and "layer" in error_msg:
+                                yield send_event('progress', f'Uploading layer: {error}', 88)
+                            elif "writing manifest" in error_msg:
+                                yield send_event('progress', 'Writing manifest to registry...', 94)
+                            elif "transferring model data" in error_msg:
+                                yield send_event('progress', 'Transferring model data...', 92)
+                            elif "using existing layer" in error_msg:
+                                yield send_event('progress', 'Using existing layer...', 93)
+                            elif "success" in error_msg:
+                                yield send_event('progress', 'Push completed successfully!', 95)
+                            else:
+                                if "error" in error_msg:
+                                    yield send_event('error', error)
+                                else:
+                                    yield send_event('progress', error, last_progress)
+                    except queue.Empty:
+                        pass
+                        
+                    if process_ended and q_stdout.empty() and q_stderr.empty():
                         break
-
-                    if error:
-                        # Log the actual error output for debugging
-                        print(f"Push stderr: {error.strip()}")
-                        # Filter out progress messages
-                        error_msg = error.strip()
-                        if "pushing" in error_msg.lower() and "layer" in error_msg.lower():
-                            yield send_event('progress', f'Uploading layer: {error_msg}', 88)
-                            continue
-                        elif "writing manifest" in error_msg.lower():
-                            yield send_event('progress', 'Writing manifest to registry...', 94)
-                            continue
-                        yield send_event('error', error_msg)
-                        continue
-
-                    if output:
-                        # Log the actual output for debugging
-                        print(f"Push stdout: {output.strip()}")
-                        result = parse_ollama_output(output.strip())
-                        if result:
-                            type_, message, progress = result
-                            if progress and progress > last_progress:
-                                last_progress = progress
-                                yield send_event(type_, message, progress)
+                        
+                    time.sleep(0.1)
                 
-                # Check if process exists and get return code safely
+                # Check return code
                 return_code = current_push_process.returncode if current_push_process else -1
                 current_push_process = None
 
                 if return_code == 0:
-                    # Enhanced verification with pull test
+                    # Verification Phase
                     yield send_event('progress', 'Verifying model in registry...', 95)
                     try:
-                        ollama_cmd = get_ollama_command()
                         model_name = f"{repository}:{version}"
                         
-                        # First check if model appears in local list
+                        # 1. Check local existence
                         verify_result = subprocess.run(
                             [ollama_cmd, 'list'],
                             capture_output=True,
@@ -412,9 +486,9 @@ def push_model():
                         if verify_result.returncode == 0 and model_name in verify_result.stdout:
                             yield send_event('progress', 'Model found in local registry, performing pull test...', 96)
                             
-                            # Delete local model to ensure pull test is valid
+                            # 2. Delete local model
                             yield send_event('progress', 'Removing local model for pull verification...', 97)
-                            delete_result = subprocess.run(
+                            subprocess.run(
                                 [ollama_cmd, 'rm', model_name],
                                 capture_output=True,
                                 text=True,
@@ -423,7 +497,7 @@ def push_model():
                                 errors='replace'
                             )
                             
-                            # Now attempt to pull the model to verify it's in the remote registry
+                            # 3. Pull model
                             yield send_event('progress', 'Pulling model from registry to verify availability...', 98)
                             
                             pull_process = subprocess.Popen(
@@ -437,68 +511,93 @@ def push_model():
                                 errors='replace'
                             )
                             
+                            # Queues for pull
+                            q_stdout = queue.Queue()
+                            q_stderr = queue.Queue()
+                            t_stdout = threading.Thread(target=enqueue_output, args=(pull_process.stdout, q_stdout))
+                            t_stderr = threading.Thread(target=enqueue_output, args=(pull_process.stderr, q_stderr))
+                            t_stdout.daemon = True
+                            t_stderr.daemon = True
+                            t_stdout.start()
+                            t_stderr.start()
+                            
                             pull_started = time.time()
-                            pull_timeout = 600 # 10 minutes for verification pull
+                            pull_timeout = 600
+                            last_pull_progress = 98
+                            last_heartbeat = time.time()
                             
                             while True:
-                                # Send heartbeat every 15 seconds
                                 if time.time() - last_heartbeat > 15:
                                     elapsed = int(time.time() - pull_started)
-                                    yield send_event('heartbeat', f'Verification in progress... ({elapsed}s elapsed)', 98)
+                                    yield send_event('heartbeat', f'Verification pull in progress... ({elapsed}s elapsed)', last_pull_progress)
                                     last_heartbeat = time.time()
                                 
-                                if pull_process.poll() is not None:
-                                    break
-                                    
-                                # Check for timeout
+                                process_ended = pull_process.poll() is not None
+                                
                                 if time.time() - pull_started > pull_timeout:
-                                    pull_process.terminate()
+                                    if pull_process.poll() is None:
+                                        pull_process.terminate()
                                     yield send_event('error', 'Verification pull timed out')
                                     return
+
+                                # Process output
+                                try:
+                                    while True:
+                                        line = q_stdout.get_nowait()
+                                        result = parse_ollama_output(line.strip())
+                                        if result:
+                                            type_, message, progress = result
+                                            if progress and progress > last_pull_progress:
+                                                last_pull_progress = progress
+                                                yield send_event(type_, message, progress)
+                                except queue.Empty:
+                                    pass
                                     
-                                time.sleep(0.5)
+                                try:
+                                    while True:
+                                        line = q_stderr.get_nowait()
+                                        error = line.strip().lower()
+                                        if "pulling" in error or "downloading" in error:
+                                            yield send_event('progress', f'Verification: {line.strip()}', last_pull_progress)
+                                        elif "success" in error:
+                                            yield send_event('progress', 'Verification pull successful!', 99)
+                                        elif "error" in error:
+                                            yield send_event('error', line.strip())
+                                except queue.Empty:
+                                    pass
+                                
+                                if process_ended and q_stdout.empty() and q_stderr.empty():
+                                    break
+                                time.sleep(0.1)
                             
                             if pull_process.returncode == 0:
-                                # Clean up the pulled model (optional)
-                                yield send_event('progress', 'Cleaning up verification model...', 99)
-                                subprocess.run(
-                                    [ollama_cmd, 'rm', model_name],
-                                    capture_output=True,
-                                    text=True,
-                                    timeout=30,
-                                    encoding='utf-8',
-                                    errors='replace'
-                                )
-                                
-                                save_model_metadata(repository, version, license_text, system_prompt)
-                                yield send_event('success', 'Model pushed and verified successfully! The model is available in the registry.', 100)
+                                yield send_event('success', 'Model verified and available in registry!', 100)
                             else:
-                                stderr_output = pull_process.stderr.read() if pull_process.stderr else "Unknown error"
-                                yield send_event('error', f'Pull verification failed. The model may not be available in the remote registry. Error: {stderr_output}')
+                                yield send_event('error', f'Verification pull failed with code {pull_process.returncode}')
                         else:
-                            yield send_event('error', f'Model {model_name} not found in local registry after push.')
-                    except subprocess.TimeoutExpired:
-                        yield send_event('error', 'Verification timeout - model may not be available yet or is too large')
+                            yield send_event('error', 'Model not found in registry after push')
                     except Exception as verify_error:
-                        yield send_event('error', f'Verification error: {str(verify_error)}')
+                        yield send_event('error', f'Verification failed: {str(verify_error)}')
                 else:
-                    yield send_event('error', f'Model push failed with return code {return_code}')
-
+                    yield send_event('error', f'Push failed with return code {return_code}')
             except Exception as e:
                 print(f"Error in generate_progress: {str(e)}")
-                yield send_event('error', f'Process error: {str(e)}')
+                yield send_event('error', str(e))
             finally:
+                # Cleanup
+                if modelfile_path.exists():
+                    try:
+                        modelfile_path.unlink()
+                    except:
+                        pass
                 current_create_process = None
                 current_push_process = None
 
-        try:
-            return Response(generate_progress(), mimetype='text/event-stream')
-        except Exception as e:
-            print(f"Error creating Response: {str(e)}")
-            return jsonify({'status': 'error', 'message': f'Server error: {str(e)}'})
+        return Response(generate_progress(), mimetype='text/event-stream')
 
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
+        print(f"Error in push_model: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/refresh_models', methods=['GET'])
 def refresh_models():
@@ -511,18 +610,38 @@ def refresh_models():
 def delete_model():
     data = request.json
     model_name = data.get('model_name')
+    model_type = data.get('model_type', 'upload')  # Default to 'upload' for backward compatibility
+
     if not model_name:
         return jsonify({'status': 'error', 'message': 'No model name provided'})
     
-    upload_path = Path('uploads') / model_name
-    if upload_path.exists():
+    if model_type == 'installed':
         try:
-            upload_path.unlink()
-            return jsonify({'status': 'success', 'message': 'Model deleted successfully'})
+            ollama_cmd = get_ollama_command()
+            result = subprocess.run(
+                [ollama_cmd, 'rm', model_name],
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace'
+            )
+            if result.returncode == 0:
+                return jsonify({'status': 'success', 'message': f'Model {model_name} deleted successfully'})
+            else:
+                return jsonify({'status': 'error', 'message': f'Error deleting model: {result.stderr}'})
         except Exception as e:
-            return jsonify({'status': 'error', 'message': f'Error deleting model: {str(e)}'})
-    else:
-        return jsonify({'status': 'error', 'message': 'Model not found'})
+            return jsonify({'status': 'error', 'message': f'Error executing ollama rm: {str(e)}'})
+
+    else:  # upload
+        upload_path = Path('uploads') / model_name
+        if upload_path.exists():
+            try:
+                upload_path.unlink()
+                return jsonify({'status': 'success', 'message': 'Model deleted successfully'})
+            except Exception as e:
+                return jsonify({'status': 'error', 'message': f'Error deleting model: {str(e)}'})
+        else:
+            return jsonify({'status': 'error', 'message': 'Model not found'})
 
 def shutdown_server():
     os._exit(0)
